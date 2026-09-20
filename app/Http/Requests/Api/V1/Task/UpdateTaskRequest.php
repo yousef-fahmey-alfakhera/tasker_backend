@@ -18,6 +18,7 @@ class UpdateTaskRequest extends FormRequest
             'project_id'      => ['sometimes', 'required', 'integer', 'exists:projects,id'],
             'workspace_id'    => ['sometimes', 'required', 'integer', 'exists:workspaces,id'],
             'status_id'       => ['sometimes', 'required', 'integer', 'exists:task_statuses,id'],
+            'task_type_id'    => ['sometimes', 'required', 'integer', 'exists:task_types,id'],
             'title'           => ['sometimes', 'required', 'string', 'max:255'],
             'description'     => ['nullable', 'string'],
             'priority'        => ['sometimes', 'string', Rule::in(['None', 'Low', 'Normal', 'High', 'Urgent'])],

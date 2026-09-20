@@ -5,10 +5,13 @@ namespace Tests\Feature\Api\V1\Task;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskStatus;
+use App\Models\TaskType;
 use App\Models\User;
 use App\Models\Workspace;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class TaskTest extends TestCase
@@ -21,11 +24,14 @@ class TaskTest extends TestCase
     protected TaskStatus $pendingStatus;
     protected TaskStatus $workingStatus;
     protected TaskStatus $completedStatus;
+    protected TaskType $taskType;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(\Database\Seeders\PermissionSeeder::class);
         $this->user = User::factory()->create();
+        $this->user->assignRole('admin');
 
         $this->project = Project::create([
             'name'       => 'SaaS Platform',
@@ -55,6 +61,11 @@ class TaskTest extends TestCase
             'stage' => 'completed',
             'order' => 3,
         ]);
+
+        $this->taskType = TaskType::create([
+            'name' => 'General Maintenance',
+            'type' => 'device',
+        ]);
     }
 
     public function test_guest_cannot_access_tasks(): void
@@ -71,6 +82,7 @@ class TaskTest extends TestCase
                 'project_id'   => $this->project->id,
                 'workspace_id' => $this->workspace->id,
                 'status_id'    => $this->pendingStatus->id,
+                'task_type_id' => $this->taskType->id,
                 'title'        => 'First Task',
                 'priority'     => 'Normal',
             ]);
@@ -84,6 +96,7 @@ class TaskTest extends TestCase
                 'project_id'   => $this->project->id,
                 'workspace_id' => $this->workspace->id,
                 'status_id'    => $this->pendingStatus->id,
+                'task_type_id' => $this->taskType->id,
                 'title'        => 'Second Task',
                 'priority'     => 'High',
             ]);
@@ -192,6 +205,7 @@ class TaskTest extends TestCase
                 'project_id'     => $this->project->id,
                 'workspace_id'   => $this->workspace->id,
                 'status_id'      => $this->pendingStatus->id,
+                'task_type_id'   => $this->taskType->id,
                 'parent_task_id' => $parentTask->id,
                 'title'          => 'Subtask 1: Write Unit Tests',
                 'priority'       => 'Urgent',
@@ -207,5 +221,82 @@ class TaskTest extends TestCase
             ]);
 
         $this->assertEquals(1, $parentTask->subtasks()->count());
+    }
+
+    public function test_task_creation_with_attachments_uploaded_in_store_endpoint(): void
+    {
+        Storage::fake('public');
+
+        $file1 = UploadedFile::fake()->create('requirements.pdf', 1024, 'application/pdf');
+        $file2 = UploadedFile::fake()->image('design_mockup.png');
+
+        $response = $this->actingAs($this->user, 'sanctum')
+            ->postJson('/api/tasks', [
+                'project_id'   => $this->project->id,
+                'workspace_id' => $this->workspace->id,
+                'status_id'    => $this->pendingStatus->id,
+                'task_type_id' => $this->taskType->id,
+                'title'        => 'Task with Attachments',
+                'priority'     => 'High',
+                'attachments'  => [$file1, $file2],
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonStructure([
+                'success',
+                'data' => [
+                    'id',
+                    'title',
+                    'attachments' => [
+                        '*' => [
+                            'id',
+                            'file',
+                            'path',
+                            'file_path',
+                            'type',
+                            'size',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $data = $response->json('data');
+        $this->assertCount(2, $data['attachments']);
+        $this->assertEquals('requirements.pdf', $data['attachments'][0]['file']);
+        $this->assertStringStartsWith(Task::ATTACHMENT_PATH . '/', $data['attachments'][0]['path']);
+        $this->assertNotEmpty($data['attachments'][0]['file_path']);
+        $this->assertStringContainsString('/storage/' . $data['attachments'][0]['path'], $data['attachments'][0]['file_path']);
+
+        Storage::disk('public')->assertExists($data['attachments'][0]['path']);
+        Storage::disk('public')->assertExists($data['attachments'][1]['path']);
+
+        $task = Task::find($data['id']);
+        $this->assertEquals(2, $task->attachments()->count());
+    }
+
+    public function test_task_service_store_attachments_uses_task_attachment_path(): void
+    {
+        Storage::fake('public');
+
+        $task = Task::create([
+            'created_by'   => $this->user->id,
+            'project_id'   => $this->project->id,
+            'workspace_id' => $this->workspace->id,
+            'status_id'    => $this->pendingStatus->id,
+            'title'        => 'Task For Service Test',
+            'position'     => 1,
+        ]);
+
+        $taskService = app(\App\Services\Task\TaskService::class);
+        $file = UploadedFile::fake()->create('service_doc.txt', 128);
+
+        $attachments = $taskService->storeAttachments($task, $file, $this->user->id);
+
+        $this->assertCount(1, $attachments);
+        $attachment = $attachments->first();
+
+        $this->assertStringStartsWith(Task::ATTACHMENT_PATH . '/', $attachment->path);
+        Storage::disk('public')->assertExists($attachment->path);
+        $this->assertNotNull($attachment->getFilePath());
     }
 }

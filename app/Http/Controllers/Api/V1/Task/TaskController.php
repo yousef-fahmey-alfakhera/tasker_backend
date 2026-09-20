@@ -11,10 +11,25 @@ use App\Services\Task\TaskService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class TaskController extends Controller
+class TaskController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    /**
+     * Get the middleware that should be assigned to the controller.
+     */
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:show_tasks', only: ['index', 'show']),
+            new Middleware('permission:create_tasks', only: ['store']),
+            new Middleware('permission:update_tasks', only: ['update']),
+            new Middleware('permission:delete_tasks', only: ['destroy']),
+        ];
+    }
 
     public function __construct(
         protected TaskService $taskService
@@ -25,7 +40,7 @@ class TaskController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $tasks = $this->taskService->getAll($request->query());
+        $tasks = $this->taskService->getAll($request->query(), $request->user());
 
         return $this->successResponse(
             TaskResource::collection($tasks),

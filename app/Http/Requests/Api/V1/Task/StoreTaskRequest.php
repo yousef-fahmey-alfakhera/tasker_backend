@@ -18,6 +18,7 @@ class StoreTaskRequest extends FormRequest
             'project_id'      => ['required', 'integer', 'exists:projects,id'],
             'workspace_id'    => ['required', 'integer', 'exists:workspaces,id'],
             'status_id'       => ['required', 'integer', 'exists:task_statuses,id'],
+            'task_type_id'    => ['required', 'integer', 'exists:task_types,id'],
             'title'           => ['required', 'string', 'max:255'],
             'description'     => ['nullable', 'string'],
             'priority'        => ['nullable', 'string', Rule::in(['None', 'Low', 'Normal', 'High', 'Urgent'])],
@@ -26,6 +27,9 @@ class StoreTaskRequest extends FormRequest
             'start_date'      => ['nullable', 'date'],
             'due_date'        => ['nullable', 'date', 'after_or_equal:start_date'],
             'position'        => ['nullable', 'integer'],
+            'attachments'     => ['nullable', 'array'],
+            'attachments.*'   => ['file', 'max:51200'],
+            'attachment'      => ['nullable', 'file', 'max:51200'],
         ];
     }
 }

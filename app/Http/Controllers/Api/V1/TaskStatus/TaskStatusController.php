@@ -10,10 +10,25 @@ use App\Models\TaskStatus;
 use App\Services\TaskStatus\TaskStatusService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class TaskStatusController extends Controller
+class TaskStatusController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    /**
+     * Get the middleware that should be assigned to the controller.
+     */
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:show_task_statuses', only: ['index', 'show']),
+            new Middleware('permission:create_task_statuses', only: ['store']),
+            new Middleware('permission:update_task_statuses', only: ['update']),
+            new Middleware('permission:delete_task_statuses', only: ['destroy']),
+        ];
+    }
 
     public function __construct(
         protected TaskStatusService $taskStatusService

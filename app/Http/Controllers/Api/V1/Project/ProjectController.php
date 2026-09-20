@@ -10,10 +10,26 @@ use App\Models\Project;
 use App\Services\Project\ProjectService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class ProjectController extends Controller
+class ProjectController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    /**
+     * Get the middleware that should be assigned to the controller.
+     */
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:show_projects', only: ['index', 'show']),
+            new Middleware('permission:create_projects', only: ['store']),
+            new Middleware('permission:update_projects', only: ['update']),
+            new Middleware('permission:delete_projects', only: ['destroy']),
+        ];
+    }
 
     public function __construct(
         protected ProjectService $projectService
@@ -22,9 +38,9 @@ class ProjectController extends Controller
     /**
      * Display a listing of projects.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $projects = $this->projectService->getAll();
+        $projects = $this->projectService->getAll($request->user()->id);
 
         return $this->successResponse(
             ProjectResource::collection($projects),

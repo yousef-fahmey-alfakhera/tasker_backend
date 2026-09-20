@@ -18,7 +18,9 @@ class WorkspaceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(\Database\Seeders\PermissionSeeder::class);
         $this->user = User::factory()->create();
+        $this->user->assignRole('admin');
         $this->project = Project::create([
             'name'       => 'Core Platform',
             'created_by' => $this->user->id,

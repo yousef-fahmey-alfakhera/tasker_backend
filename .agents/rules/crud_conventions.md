@@ -54,6 +54,8 @@ For any new feature or CRUD module named `{Feature}` (e.g., `DeviceVerifyRequest
 | **Form Requests** | `app/Http/Requests/Api/V1/{Feature}/Store{Feature}Request.php`<br>`app/Http/Requests/Api/V1/{Feature}/Update{Feature}Request.php` | `app/Http/Requests/Api/V1/Task/StoreTaskRequest.php`<br>`app/Http/Requests/Api/V1/Task/UpdateTaskRequest.php` |
 | **API Resource** | `app/Http/Resources/Api/V1/{Feature}/{Feature}Resource.php` | `app/Http/Resources/Api/V1/Task/TaskResource.php` |
 | **Service** | `app/Services/{Feature}/{Feature}Service.php` | `app/Services/Task/TaskService.php` |
+| **Feature Seeder** | `database/seeders/{Feature}Seeder.php` | `database/seeders/TaskSeeder.php` (Seeds fake/sample data) |
+| **Permission Seeder**| `database/seeders/PermissionSeeder.php` | Register `(show,create,update,delete)_{resource}` with `name_ar` |
 | **Translations** | `lang/en/messages.php`<br>`lang/ar/messages.php` | Bilingual keys added in both files |
 | **Feature Test** | `tests/Feature/Api/V1/{Feature}/{Feature}Test.php` | `tests/Feature/Api/V1/Task/TaskTest.php` |
 | **Documentation** | `docs/endpoints/{feature}.md`<br>`docs/collection.json` | Updated with request/response specs |
@@ -62,6 +64,7 @@ For any new feature or CRUD module named `{Feature}` (e.g., `DeviceVerifyRequest
 
 ## 3. Controller Guidelines
 - Controllers must use `App\Traits\ApiResponse`.
+- Controllers must implement `Illuminate\Routing\Controllers\HasMiddleware` to guard all actions with their respective permissions (`show_*`, `create_*`, `update_*`, `delete_*`).
 - Controllers must delegate business logic to the corresponding Service (`app/Services/{Feature}/{Feature}Service.php`).
 - Type-hint Form Requests on `store` and `update` actions.
 - Return responses using `successResponse($data, $message, $statusCode)` or `errorResponse($message, $statusCode, $errors)`.
@@ -133,5 +136,28 @@ Whenever a new endpoint or CRUD is created:
 - Tests must cover:
   - Validation failures (HTTP 422)
   - Unauthenticated access prevention (HTTP 401)
+  - Unauthorized access prevention without permission (HTTP 403)
   - Successful execution (HTTP 200/201) with response assertions
   - Both English and Arabic localized responses if applicable
+
+---
+
+## 8. Seeder & Permission Conventions
+Whenever a new CRUD module `{Feature}` is implemented:
+1. **Feature Seeder**: Create `database/seeders/{Feature}Seeder.php` to populate realistic fake/sample data for local testing and development.
+2. **Permission Seeder**: Register the feature's 4 core permissions in `database/seeders/PermissionSeeder.php`:
+   - Format: `show_{resources}`, `create_{resources}`, `update_{resources}`, `delete_{resources}`
+   - Attributes: `guard_name => 'sanctum'`, `name_ar => '<Arabic translation>'`
+3. **Endpoint Guarding**: Implement `Illuminate\Routing\Controllers\HasMiddleware` in `{Feature}Controller.php`:
+   ```php
+   public static function middleware(): array
+   {
+       return [
+           new Middleware('permission:show_resources', only: ['index', 'show']),
+           new Middleware('permission:create_resources', only: ['store']),
+           new Middleware('permission:update_resources', only: ['update']),
+           new Middleware('permission:delete_resources', only: ['destroy']),
+       ];
+   }
+   ```
+4. **DatabaseSeeder**: Register the new seeder in `database/seeders/DatabaseSeeder.php`.

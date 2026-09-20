@@ -6,11 +6,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Task extends Model
 {
     use HasFactory, SoftDeletes;
+
+    public const ATTACHMENT_PATH = 'tasks/attachments';
 
     protected $fillable = [
         'created_by',
@@ -22,6 +25,7 @@ class Task extends Model
         'project_id',
         'workspace_id',
         'status_id',
+        'task_type_id',
         'start_date',
         'due_date',
         'position',
@@ -75,5 +79,15 @@ class Task extends Model
     public function status(): BelongsTo
     {
         return $this->belongsTo(TaskStatus::class, 'status_id');
+    }
+
+    public function taskType(): BelongsTo
+    {
+        return $this->belongsTo(TaskType::class, 'task_type_id');
+    }
+
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
     }
 }

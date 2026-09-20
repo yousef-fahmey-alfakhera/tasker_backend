@@ -2,19 +2,27 @@
 
 namespace App\Services\Task;
 
+use App\Models\Attachment;
 use App\Models\Task;
 use App\Models\TaskStatus;
+use App\Models\User;
+use App\Services\File\FileService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 
 class TaskService
 {
+    public function __construct(
+        protected FileService $fileService = new FileService()
+    ) {}
+
     /**
      * Get all tasks with optional filters.
      */
-    public function getAll(array $filters = []): Collection
+    public function getAll(array $filters = [], ?User $user = null): Collection
     {
-        $query = Task::with(['creator', 'fixedBy', 'project', 'workspace', 'status'])
+        $query = Task::with(['creator', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'attachments'])
             ->withCount('subtasks')
             ->orderBy('position');
 
@@ -34,6 +42,14 @@ class TaskService
             $query->where('priority', $filters['priority']);
         }
 
+        // If user is provided and has NO userType, filter tasks created by user
+        if ($user) {
+            $user->loadMissing('userType');
+            if (! $user->userType) {
+                $query->where('created_by', $user->id);
+            }
+        }
+
         return $query->get();
     }
 
@@ -42,16 +58,23 @@ class TaskService
      */
     public function getById(Task $task): Task
     {
-        return $task->loadMissing(['creator', 'fixedBy', 'project', 'workspace', 'status'])
+        return $task->loadMissing(['creator', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'attachments'])
             ->loadCount('subtasks');
     }
 
     /**
-     * Create a task with auto-position and stage tracking.
+     * Create a task with auto-position, stage tracking, and optional attachments.
      */
     public function create(array $data, int $userId): Task
     {
         $data['created_by'] = $userId;
+
+        // Extract attachments before creating task model
+        $attachments = $data['attachments'] ?? [];
+        if (isset($data['attachment']) && $data['attachment'] instanceof UploadedFile) {
+            $attachments[] = $data['attachment'];
+        }
+        unset($data['attachments'], $data['attachment']);
 
         // Auto position: max(position) + 1 in the workspace
         if (!isset($data['position']) || $data['position'] === null) {
@@ -80,7 +103,38 @@ class TaskService
 
         $task = Task::create($data);
 
-        return $task->loadMissing(['creator', 'fixedBy', 'project', 'workspace', 'status']);
+        // Store attachments using Task::ATTACHMENT_PATH if provided
+        if (!empty($attachments)) {
+            $this->storeAttachments($task, $attachments, $userId);
+        }
+
+        return $task->loadMissing(['creator', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'attachments']);
+    }
+
+    /**
+     * Store attachments for a task using Task::ATTACHMENT_PATH.
+     */
+    public function storeAttachments(Task $task, array|UploadedFile $files, int $userId): Collection
+    {
+        if ($files instanceof UploadedFile) {
+            $files = [$files];
+        }
+
+        $created = [];
+        foreach ($files as $file) {
+            if ($file instanceof UploadedFile) {
+                $storedPath = $this->fileService->upload($file, Task::ATTACHMENT_PATH);
+                $created[] = $task->attachments()->create([
+                    'file'       => $file->getClientOriginalName(),
+                    'path'       => $storedPath,
+                    'type'       => $file->getClientMimeType() ?: ($file->getClientOriginalExtension() ?: 'unknown'),
+                    'size'       => $file->getSize() ?: 0,
+                    'created_by' => $userId,
+                ]);
+            }
+        }
+
+        return new Collection($created);
     }
 
     /**
@@ -110,7 +164,7 @@ class TaskService
 
         $task->update($data);
 
-        return $task->fresh(['creator', 'fixedBy', 'project', 'workspace', 'status'])
+        return $task->fresh(['creator', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'attachments'])
             ->loadCount('subtasks');
     }
 

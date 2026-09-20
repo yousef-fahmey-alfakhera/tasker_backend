@@ -45,4 +45,44 @@ return [
     'task_updated'            => 'Task updated successfully.',
     'task_deleted'            => 'Task deleted successfully.',
     'task_list'               => 'Tasks retrieved successfully.',
+
+    // Attachments
+    'attachment_created'      => 'Attachment uploaded successfully.',
+    'attachment_retrieved'    => 'Attachment retrieved successfully.',
+    'attachment_updated'      => 'Attachment updated successfully.',
+    'attachment_deleted'      => 'Attachment deleted successfully.',
+    'attachment_list'         => 'Attachments retrieved successfully.',
+
+    // Permissions
+    'permissions_retrieved'   => 'Permissions retrieved successfully.',
+
+    // Settings
+    'setting_created'         => 'Setting created successfully.',
+    'setting_retrieved'       => 'Setting retrieved successfully.',
+    'setting_updated'         => 'Setting updated successfully.',
+    'setting_deleted'         => 'Setting deleted successfully.',
+    'setting_list'            => 'Settings retrieved successfully.',
+
+    // User Settings & Theme
+    'user_setting_created'    => 'User setting saved successfully.',
+    'user_setting_retrieved'  => 'User setting retrieved successfully.',
+    'user_setting_updated'    => 'User setting updated successfully.',
+    'user_setting_deleted'    => 'User setting reset successfully.',
+    'user_setting_list'       => 'User settings retrieved successfully.',
+    'theme_retrieved'         => 'Theme retrieved successfully.',
+    'theme_updated'           => 'Theme updated successfully.',
+
+    // Task Types
+    'task_type_created'       => 'Task type created successfully.',
+    'task_type_retrieved'     => 'Task type retrieved successfully.',
+    'task_type_updated'       => 'Task type updated successfully.',
+    'task_type_deleted'       => 'Task type deleted successfully.',
+    'task_type_list'          => 'Task types retrieved successfully.',
+
+    // User Types
+    'user_type_created'       => 'User type created successfully.',
+    'user_type_retrieved'     => 'User type retrieved successfully.',
+    'user_type_updated'       => 'User type updated successfully.',
+    'user_type_deleted'       => 'User type deleted successfully.',
+    'user_type_list'          => 'User types retrieved successfully.',
 ];

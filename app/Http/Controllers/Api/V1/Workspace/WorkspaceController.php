@@ -10,10 +10,26 @@ use App\Models\Workspace;
 use App\Services\Workspace\WorkspaceService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class WorkspaceController extends Controller
+class WorkspaceController extends Controller implements HasMiddleware
 {
     use ApiResponse;
+
+    /**
+     * Get the middleware that should be assigned to the controller.
+     */
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:show_workspaces', only: ['index', 'show']),
+            new Middleware('permission:create_workspaces', only: ['store']),
+            new Middleware('permission:update_workspaces', only: ['update']),
+            new Middleware('permission:delete_workspaces', only: ['destroy']),
+        ];
+    }
 
     public function __construct(
         protected WorkspaceService $workspaceService
@@ -22,9 +38,9 @@ class WorkspaceController extends Controller
     /**
      * Display a listing of workspaces.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $workspaces = $this->workspaceService->getAll();
+        $workspaces = $this->workspaceService->getAll($request->user()->id);
 
         return $this->successResponse(
             WorkspaceResource::collection($workspaces),

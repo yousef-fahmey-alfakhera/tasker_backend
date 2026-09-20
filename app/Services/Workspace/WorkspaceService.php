@@ -8,11 +8,20 @@ use Illuminate\Database\Eloquent\Collection;
 class WorkspaceService
 {
     /**
-     * Get all workspaces.
+     * Get all workspaces (optionally filtered by assigned user).
      */
-    public function getAll(): Collection
+    public function getAll(?int $userId = null): Collection
     {
-        return Workspace::with(['project', 'creator', 'users'])->withCount('tasks')->latest()->get();
+        $query = Workspace::with(['project', 'creator', 'users'])->withCount('tasks')->latest();
+
+        if ($userId) {
+            $query->where(function ($q) use ($userId) {
+                $q->whereHas('users', fn($uq) => $uq->where('users.id', $userId))
+                  ->orWhere('created_by', $userId);
+            });
+        }
+
+        return $query->get();
     }
 
     /**

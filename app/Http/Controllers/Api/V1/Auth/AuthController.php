@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\RegisterRequest;
 use App\Http\Resources\Api\V1\Auth\AuthResource;
+use App\Http\Resources\Api\V1\Permission\PermissionResource;
 use App\Services\Auth\AuthService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -56,6 +57,19 @@ class AuthController extends Controller
         return $this->successResponse(
             null,
             __('messages.logged_out_successfully')
+        );
+    }
+
+    /**
+     * Get authenticated user's permissions.
+     */
+    public function permissions(Request $request): JsonResponse
+    {
+        $permissions = $this->authService->getUserPermissions($request->user());
+
+        return $this->successResponse(
+            PermissionResource::collection($permissions),
+            __('messages.permissions_retrieved')
         );
     }
 }

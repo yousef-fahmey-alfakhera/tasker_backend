@@ -16,7 +16,9 @@ class ProjectTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(\Database\Seeders\PermissionSeeder::class);
         $this->user = User::factory()->create();
+        $this->user->assignRole('admin');
     }
 
     public function test_guest_cannot_access_projects(): void

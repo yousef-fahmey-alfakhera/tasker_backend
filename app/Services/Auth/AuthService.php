@@ -57,4 +57,12 @@ class AuthService
     {
         $user->currentAccessToken()?->delete();
     }
+
+    /**
+     * Get all direct and inherited permissions for user.
+     */
+    public function getUserPermissions(User $user): \Illuminate\Support\Collection
+    {
+        return $user->getAllPermissions();
+    }
 }
