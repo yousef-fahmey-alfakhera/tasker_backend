@@ -9,13 +9,19 @@ trait ApiResponse
     /**
      * Return a success JSON response.
      */
-    protected function successResponse(mixed $data = null, ?string $message = null, int $status = 200): JsonResponse
+    protected function successResponse(mixed $data = null, ?string $message = null, int $status = 200, array $extra = []): JsonResponse
     {
-        return response()->json([
+        $response = [
             'success' => true,
             'message' => $message ?? __('messages.success'),
             'data'    => $data,
-        ], $status);
+        ];
+
+        if (!empty($extra)) {
+            $response = array_merge($response, $extra);
+        }
+
+        return response()->json($response, $status);
     }
 
     /**

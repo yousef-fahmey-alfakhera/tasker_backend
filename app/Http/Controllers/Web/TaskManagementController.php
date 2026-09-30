@@ -16,17 +16,20 @@ use Illuminate\View\View;
 class TaskManagementController extends Controller
 {
     /**
-     * Display tasks list, task types, and task statuses.
+     * Display tasks list, task types, task statuses, and handle trashed filter.
      */
     public function index(Request $request): View
     {
+        $isTrashed = (bool) $request->boolean('trashed');
+
         $taskTypes = TaskType::withCount('tasks')->get();
         $taskStatuses = TaskStatus::withCount('tasks')->orderBy('order')->get();
         $workspaces = Workspace::all();
         $projects = Project::all();
 
-        $query = Task::with(['status', 'taskType', 'creator', 'fixedBy', 'workspace.project'])
-            ->latest();
+        $query = $isTrashed ? Task::onlyTrashed() : Task::query();
+        $query->with(['status', 'taskType', 'creator', 'fixedBy', 'workspace.project', 'children'])
+            ->latest('id');
 
         if ($request->filled('workspace_id')) {
             $query->where('workspace_id', $request->input('workspace_id'));
@@ -45,14 +48,40 @@ class TaskManagementController extends Controller
         }
 
         $tasks = $query->paginate(15)->withQueryString();
+        $activeCount = Task::count();
+        $trashedCount = Task::onlyTrashed()->count();
 
         return view('dashboard.tasks.index', compact(
             'tasks',
             'taskTypes',
             'taskStatuses',
             'workspaces',
-            'projects'
+            'projects',
+            'isTrashed',
+            'activeCount',
+            'trashedCount'
         ));
+    }
+
+    /**
+     * Soft delete a task.
+     */
+    public function destroy(Task $task): RedirectResponse
+    {
+        $task->delete();
+
+        return back()->with('success', __('dashboard.task_deleted_success') ?: 'Task deleted successfully.');
+    }
+
+    /**
+     * Restore a soft-deleted task.
+     */
+    public function restore(int|string $id): RedirectResponse
+    {
+        $task = Task::onlyTrashed()->findOrFail($id);
+        $task->restore();
+
+        return back()->with('success', __('dashboard.task_restored_success') ?: 'Task restored successfully.');
     }
 
     /**

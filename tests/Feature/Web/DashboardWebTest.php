@@ -358,4 +358,121 @@ class DashboardWebTest extends TestCase
             ->assertSee('معلومات الملف الشخصي')
             ->assertSee('الأمان وكلمة المرور');
     }
+
+    public function test_all_dashboard_pages_render_in_urdu_when_setting_is_urdu(): void
+    {
+        $langSetting = Setting::updateOrCreate(
+            ['name' => 'language'],
+            ['type' => 'string', 'default' => 'en']
+        );
+
+        \App\Models\UserSetting::updateOrCreate(
+            ['user_id' => $this->admin->id, 'setting_id' => $langSetting->id],
+            ['value' => 'ur']
+        );
+
+        $authAdmin = $this->actingAs($this->admin, 'web');
+
+        // 1. Home Dashboard
+        $homeRes = $authAdmin->get('/dashboard');
+        $homeRes->assertStatus(200)
+            ->assertSee('dir="rtl"', false)
+            ->assertSee('lang="ur"', false)
+            ->assertSee('ٹائم لائن فلٹر کریں')
+            ->assertSee('منتخب مدت کے ٹاسکس');
+
+        // 2. Switch locale to urdu via endpoint
+        $switchUr = $authAdmin->post('/dashboard/settings/switch-locale', ['locale' => 'ur']);
+        $switchUr->assertRedirect();
+        $this->assertEquals('ur', session('locale'));
+
+        // 3. Settings Page in Urdu
+        $settingsRes = $authAdmin->get('/dashboard/settings');
+        $settingsRes->assertStatus(200)
+            ->assertSee('ذاتی ترتیبات')
+            ->assertSee('اردو (Urdu)');
+    }
+
+    public function test_web_login_with_user_code(): void
+    {
+        $this->regularUser->update(['code' => 'EMP-WEB-1']);
+
+        // Login using 'code' in the email field of the web login form
+        $response = $this->post('/login', [
+            'email'    => 'EMP-WEB-1',
+            'password' => '123456789',
+        ]);
+
+        $response->assertRedirect('/dashboard');
+        $this->assertAuthenticatedAs($this->regularUser, 'web');
+    }
+
+    public function test_web_user_create_soft_delete_and_restore(): void
+    {
+        $project = Project::firstOrCreate(['name' => 'Support Dept']);
+
+        // 1. Create user via web form
+        $createRes = $this->actingAs($this->admin, 'web')->post('/dashboard/users', [
+            'name'       => 'Support Agent',
+            'email'      => 'agent@support.com',
+            'password'   => 'Secret1234!',
+            'code'       => 'AGT001',
+            'project_id' => $project->id,
+            'role'       => 'user',
+        ]);
+        $createRes->assertRedirect();
+        $this->assertDatabaseHas('users', ['email' => 'agent@support.com', 'code' => 'AGT001']);
+
+        $createdUser = User::where('email', 'agent@support.com')->first();
+
+        // 2. Soft delete via web
+        $deleteRes = $this->actingAs($this->admin, 'web')->delete("/dashboard/users/{$createdUser->id}");
+        $deleteRes->assertRedirect();
+        $this->assertNull(User::find($createdUser->id));
+        $this->assertNotNull(User::withTrashed()->find($createdUser->id)->deleted_at);
+
+        // 3. View trashed users page in web
+        $trashedPage = $this->actingAs($this->admin, 'web')->get('/dashboard/users?trashed=1');
+        $trashedPage->assertStatus(200)->assertSee('Support Agent');
+
+        // 4. Restore via web
+        $restoreRes = $this->actingAs($this->admin, 'web')->post("/dashboard/users/{$createdUser->id}/restore");
+        $restoreRes->assertRedirect();
+        $this->assertNotNull(User::find($createdUser->id));
+        $this->assertNull(User::find($createdUser->id)->deleted_at);
+    }
+
+    public function test_web_task_soft_delete_and_restore(): void
+    {
+        $project = Project::firstOrCreate(['name' => 'Tasks Dept']);
+        $workspace = Workspace::firstOrCreate([
+            'project_id' => $project->id,
+            'name'       => 'Task WS',
+            'created_by' => $this->admin->id,
+        ]);
+        $status = TaskStatus::first();
+
+        $task = Task::create([
+            'created_by'   => $this->admin->id,
+            'project_id'   => $project->id,
+            'workspace_id' => $workspace->id,
+            'status_id'    => $status->id,
+            'title'        => 'Web Task Delete Test',
+            'position'     => 1,
+        ]);
+
+        // 1. Delete task via web
+        $deleteRes = $this->actingAs($this->admin, 'web')->delete("/dashboard/tasks/{$task->id}");
+        $deleteRes->assertRedirect();
+        $this->assertNull(Task::find($task->id));
+
+        // 2. Trashed page
+        $trashedPage = $this->actingAs($this->admin, 'web')->get('/dashboard/tasks?trashed=1');
+        $trashedPage->assertStatus(200)->assertSee('Web Task Delete Test');
+
+        // 3. Restore via web
+        $restoreRes = $this->actingAs($this->admin, 'web')->post("/dashboard/tasks/{$task->id}/restore");
+        $restoreRes->assertRedirect();
+        $this->assertNotNull(Task::find($task->id));
+    }
 }

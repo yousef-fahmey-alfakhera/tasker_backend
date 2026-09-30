@@ -79,10 +79,24 @@ return [
     'task_type_deleted'       => 'تم حذف نوع المهمة بنجاح.',
     'task_type_list'          => 'تم استرجاع قائمة أنواع المهام بنجاح.',
 
+    // Tasks trashed and restored
+    'task_restored'           => 'تم استرجاع المهمة بنجاح.',
+    'deleted_tasks_list'      => 'تم استرجاع قائمة المهام المحذوفة بنجاح.',
+
     // User Types
     'user_type_created'       => 'تم إنشاء نوع المستخدم بنجاح.',
     'user_type_retrieved'     => 'تم استرجاع نوع المستخدم بنجاح.',
     'user_type_updated'       => 'تم تحديث نوع المستخدم بنجاح.',
     'user_type_deleted'       => 'تم حذف نوع المستخدم بنجاح.',
     'user_type_list'          => 'تم استرجاع قائمة أنواع المستخدمين بنجاح.',
+
+    // Users
+    'user_created'            => 'تم إنشاء المستخدم بنجاح.',
+    'user_retrieved'          => 'تم استرجاع بيانات المستخدم بنجاح.',
+    'user_updated'            => 'تم تحديث بيانات المستخدم بنجاح.',
+    'user_deleted'            => 'تم حذف المستخدم بنجاح.',
+    'user_restored'           => 'تم استرجاع المستخدم بنجاح.',
+    'user_list'               => 'تم استرجاع قائمة المستخدمين بنجاح.',
+    'deleted_users_list'      => 'تم استرجاع قائمة المستخدمين المحذوفين بنجاح.',
+    'select_department'       => 'برجاء اختيار القسم.',
 ];

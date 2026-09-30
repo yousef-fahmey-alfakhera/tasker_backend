@@ -86,6 +86,7 @@ class TaskResource extends JsonResource
             'actual_minutes' => $this->actual_minutes,
             'subtasks_count' => $this->whenCounted('subtasks'),
             'attachments'    => AttachmentResource::collection($this->whenLoaded('attachments')),
+            'children'       => TaskResource::collection($this->whenLoaded('children')),
             'created_at'     => $this->created_at?->toISOString(),
             'updated_at'     => $this->updated_at?->toISOString(),
             'deleted_at'     => $this->deleted_at?->toISOString(),

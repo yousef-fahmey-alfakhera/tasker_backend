@@ -89,6 +89,7 @@
                 <select name="language" class="w-full sm:w-64 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold">
                     <option value="en" {{ ($userPreferences['language'] ?? $user->getPreferredLocale()) === 'en' ? 'selected' : '' }}>{{ __('dashboard.lang_english') }}</option>
                     <option value="ar" {{ ($userPreferences['language'] ?? $user->getPreferredLocale()) === 'ar' ? 'selected' : '' }}>{{ __('dashboard.lang_arabic') }}</option>
+                    <option value="ur" {{ ($userPreferences['language'] ?? $user->getPreferredLocale()) === 'ur' ? 'selected' : '' }}>{{ __('dashboard.lang_urdu') }}</option>
                 </select>
             </div>
         </div>

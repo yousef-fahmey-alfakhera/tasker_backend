@@ -109,4 +109,19 @@ class ProfileTest extends TestCase
                 'message' => 'تم استرجاع بيانات الملف الشخصي بنجاح.',
             ]);
     }
+
+    public function test_profile_returns_urdu_message_with_accept_language_header(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->withHeader('Accept-Language', 'ur')
+            ->getJson('/api/profile');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'پروفائل کی معلومات کامیابی سے حاصل ہو گئیں۔',
+            ]);
+    }
 }

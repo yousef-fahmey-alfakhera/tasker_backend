@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\Setting\SettingController;
 use App\Http\Controllers\Api\V1\Task\TaskController;
 use App\Http\Controllers\Api\V1\TaskStatus\TaskStatusController;
 use App\Http\Controllers\Api\V1\TaskType\TaskTypeController;
+use App\Http\Controllers\Api\V1\User\UserController;
 use App\Http\Controllers\Api\V1\UserSetting\UserSettingController;
 use App\Http\Controllers\Api\V1\UserType\UserTypeController;
 use App\Http\Controllers\Api\V1\Workspace\WorkspaceController;
@@ -126,6 +127,8 @@ Route::middleware('auth:sanctum')->group(function () {
         function () {
             Route::get('/', 'index');
             Route::post('/', 'store');
+            Route::get('/trashed', 'trashed');
+            Route::post('/{id}/restore', 'restore');
             Route::get('/{task}', 'show');
             Route::put('/{task}', 'update');
             Route::post('/{task}', 'update');
@@ -224,6 +227,24 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{userType}', 'update');
             Route::post('/{userType}', 'update');
             Route::delete('/{userType}', 'destroy');
+        }
+    );
+
+    // Users CRUD
+    Route::group(
+        [
+            'prefix'     => 'users',
+            'controller' => UserController::class,
+        ],
+        function () {
+            Route::get('/', 'index');
+            Route::post('/', 'store');
+            Route::get('/trashed', 'trashed');
+            Route::post('/{id}/restore', 'restore');
+            Route::get('/{user}', 'show');
+            Route::put('/{user}', 'update');
+            Route::post('/{user}', 'update');
+            Route::delete('/{user}', 'destroy');
         }
     );
 });

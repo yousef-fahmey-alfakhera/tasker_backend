@@ -24,9 +24,9 @@ class TaskController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:show_tasks', only: ['index', 'show']),
+            new Middleware('permission:show_tasks', only: ['index', 'show', 'trashed']),
             new Middleware('permission:create_tasks', only: ['store']),
-            new Middleware('permission:update_tasks', only: ['update']),
+            new Middleware('permission:update_tasks', only: ['update', 'restore']),
             new Middleware('permission:delete_tasks', only: ['destroy']),
         ];
     }
@@ -40,11 +40,21 @@ class TaskController extends Controller implements HasMiddleware
      */
     public function index(Request $request): JsonResponse
     {
-        $tasks = $this->taskService->getAll($request->query(), $request->user());
+        $perPage = (int) $request->query('per_page', 10);
+        $tasks = $this->taskService->getAll($request->query(), $request->user(), $perPage);
 
         return $this->successResponse(
             TaskResource::collection($tasks),
-            __('messages.task_list')
+            __('messages.task_list'),
+            200,
+            [
+                'pagination' => [
+                    'current_page' => $tasks->currentPage(),
+                    'per_page'     => $tasks->perPage(),
+                    'total'        => $tasks->total(),
+                    'last_page'    => $tasks->lastPage(),
+                ],
+            ]
         );
     }
 
@@ -101,6 +111,42 @@ class TaskController extends Controller implements HasMiddleware
         return $this->successResponse(
             null,
             __('messages.task_deleted')
+        );
+    }
+
+    /**
+     * Display a listing of soft-deleted tasks.
+     */
+    public function trashed(Request $request): JsonResponse
+    {
+        $perPage = (int) $request->query('per_page', 10);
+        $tasks = $this->taskService->getTrashed($request->query(), $request->user(), $perPage);
+
+        return $this->successResponse(
+            TaskResource::collection($tasks),
+            __('messages.deleted_tasks_list'),
+            200,
+            [
+                'pagination' => [
+                    'current_page' => $tasks->currentPage(),
+                    'per_page'     => $tasks->perPage(),
+                    'total'        => $tasks->total(),
+                    'last_page'    => $tasks->lastPage(),
+                ],
+            ]
+        );
+    }
+
+    /**
+     * Restore the specified soft-deleted task.
+     */
+    public function restore(int|string $id): JsonResponse
+    {
+        $task = $this->taskService->restore($id);
+
+        return $this->successResponse(
+            new TaskResource($task),
+            __('messages.task_restored')
         );
     }
 }

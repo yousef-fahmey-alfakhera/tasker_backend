@@ -159,3 +159,55 @@ Soft deletes the task. The record remains stored with a `deleted_at` timestamp a
   "data": null
 }
 ```
+
+---
+
+## 5. Get Trashed Tasks
+
+Retrieves list of soft-deleted tasks with pagination.
+
+- **Method**: `GET`
+- **URL**: `/api/tasks/trashed?per_page=10`
+
+### Response (200 OK)
+```json
+{
+  "success": true,
+  "message": "Deleted tasks retrieved successfully.",
+  "data": [
+    {
+      "id": 1,
+      "title": "Old Task",
+      "deleted_at": "2026-09-30T10:00:00.000000Z"
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "per_page": 10,
+    "total": 1,
+    "last_page": 1
+  }
+}
+```
+
+---
+
+## 6. Restore Task
+
+Restores a previously soft-deleted task.
+
+- **Method**: `POST`
+- **URL**: `/api/tasks/{id}/restore`
+
+### Response (200 OK)
+```json
+{
+  "success": true,
+  "message": "Task restored successfully.",
+  "data": {
+    "id": 1,
+    "title": "Restored Task",
+    "deleted_at": null
+  }
+}
+```

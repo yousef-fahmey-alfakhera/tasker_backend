@@ -376,6 +376,24 @@
             "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
             "url": {"raw": "{{base_url}}/tasks/1", "host": ["{{base_url}}"], "path": ["tasks", "1"]}
           }
+        },
+        {
+          "name": "Get Trashed Tasks",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/tasks/trashed", "host": ["{{base_url}}"], "path": ["tasks", "trashed"]}
+          }
+        },
+        {
+          "name": "Restore Task",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/tasks/1/restore", "host": ["{{base_url}}"], "path": ["tasks", "1", "restore"]}
+          }
         }
       ]
     },
@@ -598,6 +616,88 @@
             "method": "DELETE",
             "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
             "url": {"raw": "{{base_url}}/user-settings/1", "host": ["{{base_url}}"], "path": ["user-settings", "1"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Protected / Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/users?per_page=15", "host": ["{{base_url}}"], "path": ["users"]}
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Smith\",\n  \"email\": \"jane.smith@tasker.test\",\n  \"password\": \"Password123!\",\n  \"code\": \"EMP-102\",\n  \"project_id\": 1,\n  \"role\": \"user\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/users", "host": ["{{base_url}}"], "path": ["users"]}
+          }
+        },
+        {
+          "name": "Show User",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/users/1", "host": ["{{base_url}}"], "path": ["users", "1"]}
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Smith Updated\",\n  \"code\": \"EMP-102-REV\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/users/1", "host": ["{{base_url}}"], "path": ["users", "1"]}
+          }
+        },
+        {
+          "name": "Delete User (Soft Delete)",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/users/1", "host": ["{{base_url}}"], "path": ["users", "1"]}
+          }
+        },
+        {
+          "name": "Get Trashed Users",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/users/trashed", "host": ["{{base_url}}"], "path": ["users", "trashed"]}
+          }
+        },
+        {
+          "name": "Restore User",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/users/1/restore", "host": ["{{base_url}}"], "path": ["users", "1", "restore"]}
           }
         }
       ]

@@ -21,9 +21,12 @@ Creates a new user account and returns an authenticated personal access token.
   "name": "Jane Doe",
   "email": "jane@tasker.test",
   "password": "Password123!",
-  "password_confirmation": "Password123!"
+  "password_confirmation": "Password123!",
+  "code": "EMP-001",
+  "project_id": 1
 }
 ```
+*Note: `code` is nullable and not required. `project_id` is required (Department); returns `"برجاء اختيار القسم"` if omitted.*
 
 ### Success Response (201 Created)
 - **English (`Accept-Language: en`)**:
@@ -82,7 +85,7 @@ Creates a new user account and returns an authenticated personal access token.
 
 ## 2. Login User
 
-Authenticates credentials and returns a Bearer token.
+Authenticates credentials using **Email** or **User Code** and returns a Bearer token.
 
 - **Method**: `POST`
 - **URL**: `/api/public/auth/login`
@@ -91,13 +94,22 @@ Authenticates credentials and returns a Bearer token.
   - `Content-Type`: `application/json`
   - `Accept-Language`: `en` (or `ar`)
 
-### Request Body (JSON)
+### Request Body (JSON - Login by Email)
 ```json
 {
   "email": "jane@tasker.test",
   "password": "Password123!"
 }
 ```
+
+### Request Body (JSON - Login by User Code)
+```json
+{
+  "code": "EMP-001",
+  "password": "Password123!"
+}
+```
+*(Also supports passing code directly inside the `"email"` field: `{"email": "EMP-001", "password": "..."}`)*
 
 ### Success Response (200 OK)
 - **English**:

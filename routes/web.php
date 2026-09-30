@@ -38,6 +38,9 @@ Route::middleware('auth:web')->group(function () {
 
         // 2. User Management
         Route::get('/users', [UserManagementController::class, 'index'])->name('users');
+        Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
+        Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+        Route::post('/users/{id}/restore', [UserManagementController::class, 'restore'])->name('users.restore');
         Route::post('/users/{user}/type', [UserManagementController::class, 'updateType'])->name('users.type');
 
         // 3. Role & Permission Management
@@ -48,6 +51,8 @@ Route::middleware('auth:web')->group(function () {
 
         // 5. Tasks Management (with Task Types & Statuses)
         Route::get('/tasks', [TaskManagementController::class, 'index'])->name('tasks');
+        Route::delete('/tasks/{task}', [TaskManagementController::class, 'destroy'])->name('tasks.destroy');
+        Route::post('/tasks/{id}/restore', [TaskManagementController::class, 'restore'])->name('tasks.restore');
         Route::post('/tasks/types', [TaskManagementController::class, 'storeType'])->name('tasks.type.store');
         Route::post('/tasks/statuses', [TaskManagementController::class, 'storeStatus'])->name('tasks.status.store');
 

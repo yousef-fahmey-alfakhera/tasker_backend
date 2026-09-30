@@ -50,7 +50,7 @@ class PersonalSettingController extends Controller
             'name'       => ['required', 'string', 'max:255'],
             'email'      => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
             'theme_mode' => ['required', Rule::in(['light', 'dark'])],
-            'language'   => ['nullable', Rule::in(['en', 'ar'])],
+            'language'   => ['nullable', Rule::in(['en', 'ar', 'ur'])],
             'password'   => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
@@ -147,7 +147,7 @@ class PersonalSettingController extends Controller
     public function switchLocale(Request $request): RedirectResponse
     {
         $locale = $request->input('locale');
-        if (in_array($locale, ['en', 'ar'])) {
+        if (in_array($locale, ['en', 'ar', 'ur'])) {
             $user = Auth::guard('web')->user();
             if ($user) {
                 $langSetting = Setting::firstOrCreate(

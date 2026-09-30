@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}" class="h-full">
+<html lang="{{ app()->getLocale() }}" dir="{{ in_array(app()->getLocale(), ['ar', 'ur']) ? 'rtl' : 'ltr' }}" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -197,12 +197,24 @@
                     </button>
 
                     <!-- Language Switcher Button -->
+                    @php
+                        $nextLocale = match(app()->getLocale()) {
+                            'en' => 'ar',
+                            'ar' => 'ur',
+                            default => 'en',
+                        };
+                        $nextLocaleLabel = match($nextLocale) {
+                            'ar' => 'العربية (RTL)',
+                            'ur' => 'اردو (RTL)',
+                            default => 'English (LTR)',
+                        };
+                    @endphp
                     <form action="{{ route('dashboard.settings.switch_locale') }}" method="POST" class="inline">
                         @csrf
-                        <input type="hidden" name="locale" value="{{ app()->getLocale() === 'ar' ? 'en' : 'ar' }}">
+                        <input type="hidden" name="locale" value="{{ $nextLocale }}">
                         <button type="submit" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center gap-1.5 text-xs font-bold shadow-sm" title="{{ __('dashboard.switch_language') }}">
                             <span class="text-sm">🌐</span>
-                            <span class="hidden sm:inline">{{ app()->getLocale() === 'ar' ? 'English (LTR)' : 'العربية (RTL)' }}</span>
+                            <span class="hidden sm:inline">{{ $nextLocaleLabel }}</span>
                         </button>
                     </form>
 

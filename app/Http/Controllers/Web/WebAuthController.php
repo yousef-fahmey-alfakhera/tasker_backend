@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class WebAuthController extends Controller
@@ -24,18 +25,26 @@ class WebAuthController extends Controller
     }
 
     /**
-     * Process web login.
+     * Process web login using email or user code.
      */
     public function login(Request $request): RedirectResponse
     {
-        $credentials = $request->validate([
-            'email'    => ['required', 'email'],
+        $request->validate([
+            'email'    => ['required_without:code', 'nullable', 'string'],
+            'code'     => ['required_without:email', 'nullable', 'string'],
             'password' => ['required', 'string'],
         ]);
 
+        $loginInput = $request->input('code') ?: $request->input('email');
+        $password = (string) $request->input('password');
         $remember = (bool) $request->boolean('remember');
 
-        if (Auth::guard('web')->attempt($credentials, $remember)) {
+        $user = User::where('email', $loginInput)
+            ->orWhere('code', $loginInput)
+            ->first();
+
+        if ($user && Hash::check($password, $user->password)) {
+            Auth::guard('web')->login($user, $remember);
             $request->session()->regenerate();
 
             return redirect()->intended(route('dashboard.index'))
@@ -44,7 +53,7 @@ class WebAuthController extends Controller
 
         return back()->withErrors([
             'email' => __('messages.invalid_credentials'),
-        ])->onlyInput('email');
+        ])->onlyInput('email', 'code');
     }
 
     /**

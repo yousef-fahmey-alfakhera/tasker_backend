@@ -86,40 +86,57 @@
     <div class="space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-                <h2 class="text-base font-extrabold text-slate-900 dark:text-white">{{ __('dashboard.tasks_directory') }}</h2>
+                <h2 class="text-base font-extrabold text-slate-900 dark:text-white">{{ $isTrashed ? __('dashboard.deleted_tasks') : __('dashboard.tasks_directory') }}</h2>
                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('dashboard.showing_tasks_matching', ['count' => $tasks->total()]) }}</p>
             </div>
 
-            <!-- Inline Filters Form -->
-            <form action="{{ route('dashboard.tasks') }}" method="GET" class="flex flex-wrap items-center gap-2">
-                <select name="workspace_id" onchange="this.form.submit()" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200">
-                    <option value="">{{ __('dashboard.all_workspaces') }}</option>
-                    @foreach($workspaces as $w)
-                    <option value="{{ $w->id }}" {{ request('workspace_id') == $w->id ? 'selected' : '' }}>{{ $w->name }}</option>
-                    @endforeach
-                </select>
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Active / Trashed Filter Tabs -->
+                <div class="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 text-xs font-bold">
+                    <a href="{{ route('dashboard.tasks') }}"
+                        class="px-3 py-1.5 rounded-lg transition-all {{ !$isTrashed ? 'bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
+                        {{ __('dashboard.active_tasks') }} ({{ $activeCount }})
+                    </a>
+                    <a href="{{ route('dashboard.tasks', ['trashed' => 1]) }}"
+                        class="px-3 py-1.5 rounded-lg transition-all {{ $isTrashed ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
+                        {{ __('dashboard.deleted_tasks') }} ({{ $trashedCount }})
+                    </a>
+                </div>
 
-                <select name="task_type_id" onchange="this.form.submit()" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200">
-                    <option value="">{{ __('dashboard.all_types') }}</option>
-                    @foreach($taskTypes as $t)
-                    <option value="{{ $t->id }}" {{ request('task_type_id') == $t->id ? 'selected' : '' }}>{{ $t->name }}</option>
-                    @endforeach
-                </select>
+                <!-- Inline Filters Form -->
+                <form action="{{ route('dashboard.tasks') }}" method="GET" class="flex flex-wrap items-center gap-2">
+                    @if($isTrashed)
+                    <input type="hidden" name="trashed" value="1">
+                    @endif
+                    <select name="workspace_id" onchange="this.form.submit()" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                        <option value="">{{ __('dashboard.all_workspaces') }}</option>
+                        @foreach($workspaces as $w)
+                        <option value="{{ $w->id }}" {{ request('workspace_id') == $w->id ? 'selected' : '' }}>{{ $w->name }}</option>
+                        @endforeach
+                    </select>
 
-                <select name="priority" onchange="this.form.submit()" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200">
-                    <option value="">{{ __('dashboard.all_priorities') }}</option>
-                    <option value="Urgent" {{ request('priority') === 'Urgent' ? 'selected' : '' }}>{{ __('dashboard.urgent') }}</option>
-                    <option value="High" {{ request('priority') === 'High' ? 'selected' : '' }}>{{ __('dashboard.high') }}</option>
-                    <option value="Normal" {{ request('priority') === 'Normal' ? 'selected' : '' }}>{{ __('dashboard.normal') }}</option>
-                    <option value="Low" {{ request('priority') === 'Low' ? 'selected' : '' }}>{{ __('dashboard.low') }}</option>
-                </select>
+                    <select name="task_type_id" onchange="this.form.submit()" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                        <option value="">{{ __('dashboard.all_types') }}</option>
+                        @foreach($taskTypes as $t)
+                        <option value="{{ $t->id }}" {{ request('task_type_id') == $t->id ? 'selected' : '' }}>{{ $t->name }}</option>
+                        @endforeach
+                    </select>
 
-                @if(request()->hasAny(['workspace_id', 'task_type_id', 'priority']))
-                <a href="{{ route('dashboard.tasks') }}" class="px-2.5 py-1.5 text-xs text-rose-600 font-bold hover:underline">
-                    {{ __('dashboard.reset_filter') }}
-                </a>
-                @endif
-            </form>
+                    <select name="priority" onchange="this.form.submit()" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                        <option value="">{{ __('dashboard.all_priorities') }}</option>
+                        <option value="Urgent" {{ request('priority') === 'Urgent' ? 'selected' : '' }}>{{ __('dashboard.urgent') }}</option>
+                        <option value="High" {{ request('priority') === 'High' ? 'selected' : '' }}>{{ __('dashboard.high') }}</option>
+                        <option value="Normal" {{ request('priority') === 'Normal' ? 'selected' : '' }}>{{ __('dashboard.normal') }}</option>
+                        <option value="Low" {{ request('priority') === 'Low' ? 'selected' : '' }}>{{ __('dashboard.low') }}</option>
+                    </select>
+
+                    @if(request()->hasAny(['workspace_id', 'task_type_id', 'priority']))
+                    <a href="{{ route('dashboard.tasks', $isTrashed ? ['trashed' => 1] : []) }}" class="px-2.5 py-1.5 text-xs text-rose-600 font-bold hover:underline">
+                        {{ __('dashboard.reset_filter') }}
+                    </a>
+                    @endif
+                </form>
+            </div>
         </div>
 
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -134,6 +151,7 @@
                             <th class="px-6 py-4">{{ __('dashboard.workspace_col_header') }}</th>
                             <th class="px-6 py-4">{{ __('dashboard.creator_fixed_col') }}</th>
                             <th class="px-6 py-4">{{ __('dashboard.duration_col') }}</th>
+                            <th class="px-6 py-4 text-right rtl:text-left">{{ __('dashboard.actions_col') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -185,10 +203,32 @@
                             <td class="px-6 py-4 text-xs text-slate-500">
                                 {{ $task->actual_minutes ? $task->actual_minutes . ' ' . __('dashboard.mins') : '—' }}
                             </td>
+                            <!-- Actions -->
+                            <td class="px-6 py-4 text-right rtl:text-left">
+                                <div class="flex items-center justify-end gap-2">
+                                    @if(!$isTrashed)
+                                    <form action="{{ route('dashboard.tasks.destroy', $task->id) }}" method="POST" onsubmit="return confirm('{{ __('dashboard.confirm_delete_task') }}')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="px-2.5 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 text-xs font-bold transition-colors">
+                                            🗑️ {{ __('dashboard.delete') }}
+                                        </button>
+                                    </form>
+                                    @else
+                                    <form action="{{ route('dashboard.tasks.restore', $task->id) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-100 text-xs font-bold transition-colors flex items-center gap-1.5">
+                                            <span>♻️</span>
+                                            <span>{{ __('dashboard.restore') }}</span>
+                                        </button>
+                                    </form>
+                                    @endif
+                                </div>
+                            </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-8 text-center text-slate-400 text-xs font-medium">{{ __('dashboard.no_tasks_found') }}</td>
+                            <td colspan="8" class="px-6 py-8 text-center text-slate-400 text-xs font-medium">{{ __('dashboard.no_tasks_found') }}</td>
                         </tr>
                         @endforelse
                     </tbody>

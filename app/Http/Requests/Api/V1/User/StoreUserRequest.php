@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\Api\V1\Auth;
+namespace App\Http\Requests\Api\V1\User;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class RegisterRequest extends FormRequest
+class StoreUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -16,15 +16,13 @@ class RegisterRequest extends FormRequest
         return [
             'name'       => ['required', 'string', 'max:255'],
             'email'      => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password'   => ['required', 'string', 'min:8', 'confirmed'],
+            'password'   => ['required', 'string', 'min:8'],
             'code'       => ['nullable', 'string', 'max:50', 'unique:users,code'],
             'project_id' => ['required', 'exists:projects,id'],
+            'role'       => ['nullable', 'string', 'exists:roles,name'],
         ];
     }
 
-    /**
-     * Custom messages for validation errors.
-     */
     public function messages(): array
     {
         return [

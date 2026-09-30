@@ -299,4 +299,157 @@ class TaskTest extends TestCase
         Storage::disk('public')->assertExists($attachment->path);
         $this->assertNotNull($attachment->getFilePath());
     }
+
+    public function test_task_index_filters_root_tasks_and_loads_children_with_pagination(): void
+    {
+        $parentTask = Task::create([
+            'created_by'   => $this->user->id,
+            'project_id'   => $this->project->id,
+            'workspace_id' => $this->workspace->id,
+            'status_id'    => $this->pendingStatus->id,
+            'task_type_id' => $this->taskType->id,
+            'title'        => 'Parent Main Task',
+            'position'     => 1,
+        ]);
+
+        $childTask = Task::create([
+            'created_by'     => $this->user->id,
+            'project_id'     => $this->project->id,
+            'workspace_id'   => $this->workspace->id,
+            'status_id'      => $this->pendingStatus->id,
+            'task_type_id'   => $this->taskType->id,
+            'parent_task_id' => $parentTask->id,
+            'title'          => 'Child Subtask Item',
+            'position'       => 2,
+        ]);
+
+        $response = $this->actingAs($this->user, 'sanctum')
+            ->getJson('/api/tasks?per_page=5');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    '*' => [
+                        'id',
+                        'title',
+                        'children',
+                    ],
+                ],
+                'pagination' => [
+                    'current_page',
+                    'per_page',
+                    'total',
+                    'last_page',
+                ],
+            ]);
+
+        $rootTaskIds = collect($response->json('data'))->pluck('id');
+        // Parent task must be present in the root list
+        $this->assertTrue($rootTaskIds->contains($parentTask->id));
+        // Child task must NOT be present in root list (filtered by whereNull parent_task_id)
+        $this->assertFalse($rootTaskIds->contains($childTask->id));
+
+        // But child task must be loaded inside parent task's 'children'
+        $parentInResponse = collect($response->json('data'))->firstWhere('id', $parentTask->id);
+        $this->assertNotEmpty($parentInResponse['children']);
+        $this->assertEquals($childTask->id, $parentInResponse['children'][0]['id']);
+    }
+
+    public function test_task_show_loads_creator_project_and_children(): void
+    {
+        $parentTask = Task::create([
+            'created_by'   => $this->user->id,
+            'project_id'   => $this->project->id,
+            'workspace_id' => $this->workspace->id,
+            'status_id'    => $this->pendingStatus->id,
+            'task_type_id' => $this->taskType->id,
+            'title'        => 'Show Detailed Task',
+            'position'     => 1,
+        ]);
+
+        $childTask = Task::create([
+            'created_by'     => $this->user->id,
+            'project_id'     => $this->project->id,
+            'workspace_id'   => $this->workspace->id,
+            'status_id'      => $this->pendingStatus->id,
+            'task_type_id'   => $this->taskType->id,
+            'parent_task_id' => $parentTask->id,
+            'title'          => 'Child Under Show Task',
+            'position'       => 2,
+        ]);
+
+        $response = $this->actingAs($this->user, 'sanctum')
+            ->getJson('/api/tasks/' . $parentTask->id);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data'    => [
+                    'id'      => $parentTask->id,
+                    'creator' => [
+                        'id'    => $this->user->id,
+                        'name'  => $this->user->name,
+                        'email' => $this->user->email,
+                    ],
+                    'project' => [
+                        'id'   => $this->project->id,
+                        'name' => $this->project->name,
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('data.children'));
+        $this->assertEquals($childTask->id, $response->json('data.children.0.id'));
+    }
+
+    public function test_task_trashed_and_restore_endpoints(): void
+    {
+        $task = Task::create([
+            'created_by'   => $this->user->id,
+            'project_id'   => $this->project->id,
+            'workspace_id' => $this->workspace->id,
+            'status_id'    => $this->pendingStatus->id,
+            'task_type_id' => $this->taskType->id,
+            'title'        => 'Task To Delete And Restore',
+            'position'     => 1,
+        ]);
+
+        // Soft delete via DELETE /api/tasks/{task}
+        $this->actingAs($this->user, 'sanctum')
+            ->deleteJson('/api/tasks/' . $task->id)
+            ->assertStatus(200);
+
+        // Get trashed via GET /api/tasks/trashed
+        $trashedResponse = $this->actingAs($this->user, 'sanctum')
+            ->getJson('/api/tasks/trashed');
+
+        $trashedResponse->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data',
+                'pagination',
+            ]);
+
+        $trashedIds = collect($trashedResponse->json('data'))->pluck('id');
+        $this->assertTrue($trashedIds->contains($task->id));
+
+        // Restore via POST /api/tasks/{id}/restore
+        $restoreResponse = $this->actingAs($this->user, 'sanctum')
+            ->postJson('/api/tasks/' . $task->id . '/restore');
+
+        $restoreResponse->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Task restored successfully.',
+                'data'    => [
+                    'id' => $task->id,
+                ],
+            ]);
+
+        $this->assertNotNull(Task::find($task->id));
+        $this->assertNull(Task::find($task->id)->deleted_at);
+    }
 }

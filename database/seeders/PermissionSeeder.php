@@ -76,6 +76,12 @@ class PermissionSeeder extends Seeder
                 'update' => 'تعديل أنواع المستخدمين',
                 'delete' => 'حذف أنواع المستخدمين',
             ],
+            'users' => [
+                'show'   => 'عرض المستخدمين',
+                'create' => 'إنشاء المستخدمين',
+                'update' => 'تعديل المستخدمين',
+                'delete' => 'حذف المستخدمين',
+            ],
         ];
 
         $allPermissionInstances = [];

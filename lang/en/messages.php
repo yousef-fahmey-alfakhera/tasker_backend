@@ -79,10 +79,24 @@ return [
     'task_type_deleted'       => 'Task type deleted successfully.',
     'task_type_list'          => 'Task types retrieved successfully.',
 
+    // Tasks trashed and restored
+    'task_restored'           => 'Task restored successfully.',
+    'deleted_tasks_list'      => 'Deleted tasks retrieved successfully.',
+
     // User Types
     'user_type_created'       => 'User type created successfully.',
     'user_type_retrieved'     => 'User type retrieved successfully.',
     'user_type_updated'       => 'User type updated successfully.',
     'user_type_deleted'       => 'User type deleted successfully.',
     'user_type_list'          => 'User types retrieved successfully.',
+
+    // Users
+    'user_created'            => 'User created successfully.',
+    'user_retrieved'          => 'User retrieved successfully.',
+    'user_updated'            => 'User updated successfully.',
+    'user_deleted'            => 'User deleted successfully.',
+    'user_restored'           => 'User restored successfully.',
+    'user_list'               => 'Users retrieved successfully.',
+    'deleted_users_list'      => 'Deleted users retrieved successfully.',
+    'select_department'       => 'Please select the department.',
 ];

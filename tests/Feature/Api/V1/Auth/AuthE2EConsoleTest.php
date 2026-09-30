@@ -20,11 +20,15 @@ class AuthE2EConsoleTest extends TestCase
 
         // 1. REGISTER
         fwrite(STDOUT, "▶ STEP 1: Calling [POST /api/public/auth/register] ...\n");
+        $project = \App\Models\Project::create(['name' => 'Engineering Department']);
+
         $registerPayload = [
             'name'                  => 'Alex Morgan',
             'email'                 => 'alex.morgan@tasker.test',
             'password'              => 'SecretPassword123!',
             'password_confirmation' => 'SecretPassword123!',
+            'code'                  => 'EMP-001',
+            'project_id'            => $project->id,
         ];
 
         $registerResponse = $this->postJson('/api/public/auth/register', $registerPayload);

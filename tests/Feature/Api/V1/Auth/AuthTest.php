@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\V1\Auth;
 
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -10,6 +11,16 @@ class AuthTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected Project $project;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->project = Project::create([
+            'name' => 'Default Department',
+        ]);
+    }
+
     public function test_user_can_register_successfully(): void
     {
         $payload = [
@@ -17,6 +28,8 @@ class AuthTest extends TestCase
             'email'                 => 'john@tasker.test',
             'password'              => 'Password123!',
             'password_confirmation' => 'Password123!',
+            'code'                  => 'EMP-100',
+            'project_id'            => $this->project->id,
         ];
 
         $response = $this->postJson('/api/public/auth/register', $payload);
@@ -33,6 +46,8 @@ class AuthTest extends TestCase
                     'id',
                     'name',
                     'email',
+                    'code',
+                    'project_id',
                     'token' => [
                         'type',
                         'access_token',
@@ -41,8 +56,27 @@ class AuthTest extends TestCase
             ]);
 
         $this->assertDatabaseHas('users', [
-            'email' => 'john@tasker.test',
+            'email'      => 'john@tasker.test',
+            'code'       => 'EMP-100',
+            'project_id' => $this->project->id,
         ]);
+    }
+
+    public function test_registration_validation_fails_without_project_id_with_custom_message(): void
+    {
+        $payload = [
+            'name'                  => 'John Tasker',
+            'email'                 => 'john_no_proj@tasker.test',
+            'password'              => 'Password123!',
+            'password_confirmation' => 'Password123!',
+        ];
+
+        $response = $this->postJson('/api/public/auth/register', $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'project_id' => 'برجاء اختيار القسم',
+            ]);
     }
 
     public function test_registration_validation_fails_for_duplicate_email(): void
@@ -56,6 +90,7 @@ class AuthTest extends TestCase
             'email'                 => 'duplicate@tasker.test',
             'password'              => 'Password123!',
             'password_confirmation' => 'Password123!',
+            'project_id'            => $this->project->id,
         ]);
 
         $response->assertStatus(422)
@@ -84,6 +119,39 @@ class AuthTest extends TestCase
                     'id',
                     'token' => ['access_token'],
                 ],
+            ]);
+    }
+
+    public function test_user_can_login_with_code(): void
+    {
+        User::factory()->create([
+            'email'    => 'employee@tasker.test',
+            'code'     => 'EMP999',
+            'password' => bcrypt('Secret123!'),
+        ]);
+
+        // Login using 'code' field explicitly
+        $response1 = $this->postJson('/api/public/auth/login', [
+            'code'     => 'EMP999',
+            'password' => 'Secret123!',
+        ]);
+
+        $response1->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Logged in successfully.',
+            ]);
+
+        // Login using code placed in 'email' field
+        $response2 = $this->postJson('/api/public/auth/login', [
+            'email'    => 'EMP999',
+            'password' => 'Secret123!',
+        ]);
+
+        $response2->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Logged in successfully.',
             ]);
     }
 
@@ -127,6 +195,7 @@ class AuthTest extends TestCase
             'email'                 => 'ali@tasker.test',
             'password'              => 'Password123!',
             'password_confirmation' => 'Password123!',
+            'project_id'            => $this->project->id,
         ];
 
         $response = $this->withHeader('Accept-Language', 'ar')

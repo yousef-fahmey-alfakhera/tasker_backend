@@ -8,6 +8,7 @@ use App\Models\TaskStatus;
 use App\Models\User;
 use App\Services\File\FileService;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 
@@ -18,13 +19,22 @@ class TaskService
     ) {}
 
     /**
-     * Get all tasks with optional filters.
+     * Get all tasks with optional filters, parent filter, children eagerly loaded, and pagination.
      */
-    public function getAll(array $filters = [], ?User $user = null): Collection
+    public function getAll(array $filters = [], ?User $user = null, int $perPage = 10): LengthAwarePaginator
     {
-        $query = Task::with(['creator', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'attachments'])
+        $query = Task::with(['creator', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'attachments', 'children'])
             ->withCount('subtasks')
             ->orderBy('position');
+
+        // Filter where null parent_id by default, unless explicitly filtered
+        if (array_key_exists('parent_task_id', $filters) && $filters['parent_task_id'] !== null && $filters['parent_task_id'] !== '') {
+            $query->where('parent_task_id', $filters['parent_task_id']);
+        } elseif (array_key_exists('parent_id', $filters) && $filters['parent_id'] !== null && $filters['parent_id'] !== '') {
+            $query->where('parent_task_id', $filters['parent_id']);
+        } else {
+            $query->whereNull('parent_task_id');
+        }
 
         if (!empty($filters['workspace_id'])) {
             $query->where('workspace_id', $filters['workspace_id']);
@@ -50,16 +60,26 @@ class TaskService
             }
         }
 
-        return $query->get();
+        return $query->paginate($perPage);
     }
 
     /**
-     * Get task by instance.
+     * Get task by instance with creator, project, workspace, and children eager loaded.
      */
     public function getById(Task $task): Task
     {
-        return $task->loadMissing(['creator', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'attachments'])
-            ->loadCount('subtasks');
+        return $task->loadMissing([
+            'creator',
+            'fixedBy',
+            'project',
+            'workspace',
+            'status',
+            'taskType',
+            'attachments',
+            'children',
+            'children.status',
+            'children.taskType',
+        ])->loadCount('subtasks');
     }
 
     /**
@@ -174,5 +194,61 @@ class TaskService
     public function delete(Task $task): bool
     {
         return (bool) $task->delete();
+    }
+
+    /**
+     * Get soft-deleted tasks with optional filters and pagination.
+     */
+    public function getTrashed(array $filters = [], ?User $user = null, int $perPage = 10): LengthAwarePaginator
+    {
+        $query = Task::onlyTrashed()
+            ->with(['creator', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'children'])
+            ->withCount('subtasks')
+            ->latest('deleted_at');
+
+        if (!empty($filters['workspace_id'])) {
+            $query->where('workspace_id', $filters['workspace_id']);
+        }
+
+        if (!empty($filters['project_id'])) {
+            $query->where('project_id', $filters['project_id']);
+        }
+
+        if (!empty($filters['status_id'])) {
+            $query->where('status_id', $filters['status_id']);
+        }
+
+        if (!empty($filters['priority'])) {
+            $query->where('priority', $filters['priority']);
+        }
+
+        if ($user) {
+            $user->loadMissing('userType');
+            if (! $user->userType) {
+                $query->where('created_by', $user->id);
+            }
+        }
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * Restore a soft-deleted task.
+     */
+    public function restore(int|string $id): Task
+    {
+        $task = Task::onlyTrashed()->findOrFail($id);
+        $task->restore();
+
+        return $task->loadMissing([
+            'creator',
+            'fixedBy',
+            'project',
+            'workspace',
+            'status',
+            'taskType',
+            'attachments',
+            'children',
+        ])->loadCount('subtasks');
     }
 }

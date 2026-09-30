@@ -21,7 +21,7 @@ class SetLocale
         // 1. Check explicit Accept-Language header for API requests
         if ($request->is('api/*') || $request->expectsJson()) {
             $header = $request->header('Accept-Language');
-            if ($header && in_array(strtolower(trim($header)), ['en', 'ar'])) {
+            if ($header && in_array(strtolower(trim($header)), ['en', 'ar', 'ur'])) {
                 $locale = strtolower(trim($header));
             }
         }
@@ -34,7 +34,7 @@ class SetLocale
         // 3. Web session locale (e.g., guest language switch)
         if (! $locale && $request->hasSession() && $request->session()->has('locale')) {
             $sessionLocale = $request->session()->get('locale');
-            if (in_array($sessionLocale, ['en', 'ar'])) {
+            if (in_array($sessionLocale, ['en', 'ar', 'ur'])) {
                 $locale = $sessionLocale;
             }
         }
@@ -43,7 +43,7 @@ class SetLocale
         if (! $locale) {
             try {
                 $default = Setting::where('name', 'language')->value('default');
-                if ($default && in_array(strtolower(trim((string) $default)), ['en', 'ar'])) {
+                if ($default && in_array(strtolower(trim((string) $default)), ['en', 'ar', 'ur'])) {
                     $locale = strtolower(trim((string) $default));
                 }
             } catch (\Throwable) {
@@ -52,7 +52,7 @@ class SetLocale
         }
 
         // 5. Final fallback
-        if (! in_array($locale, ['en', 'ar'])) {
+        if (! in_array($locale, ['en', 'ar', 'ur'])) {
             $locale = config('app.fallback_locale', 'en');
         }
 

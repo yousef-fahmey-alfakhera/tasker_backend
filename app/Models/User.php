@@ -7,13 +7,14 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, Notifiable;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     protected string $guard_name = 'sanctum';
 
@@ -26,6 +27,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'code',
+        'project_id',
     ];
 
     /**
@@ -78,6 +81,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Project / Department the user belongs to.
+     */
+    public function project(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    /**
      * Tasks created by the user.
      */
     public function createdTasks(): \Illuminate\Database\Eloquent\Relations\HasMany
@@ -106,14 +117,14 @@ class User extends Authenticatable
 
             if ($userSetting && ! empty($userSetting->value)) {
                 $val = strtolower(trim((string) $userSetting->value));
-                if (in_array($val, ['en', 'ar'])) {
+                if (in_array($val, ['en', 'ar', 'ur'])) {
                     return $val;
                 }
             }
 
             // 2. Fallback to default in settings table
             $default = Setting::where('name', 'language')->value('default');
-            if ($default && in_array(strtolower(trim((string) $default)), ['en', 'ar'])) {
+            if ($default && in_array(strtolower(trim((string) $default)), ['en', 'ar', 'ur'])) {
                 return strtolower(trim((string) $default));
             }
         } catch (\Throwable) {
