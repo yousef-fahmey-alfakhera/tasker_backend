@@ -4,6 +4,10 @@
 @section('header_title', __('dashboard.users_header'))
 
 @section('content')
+@php
+    $taskTypesMap = ($taskTypes ?? collect())->keyBy('id');
+@endphp
+
 <div class="space-y-6">
     <!-- Top Filter & Action Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -122,13 +126,20 @@
                             @endif
                         </td>
 
-                        <!-- Responsibilities Array -->
+                        <!-- Responsibilities Array (Task Types) -->
                         <td class="px-5 py-4">
                             @if($u->userType && !empty($u->userType->respnsapity))
-                            <div class="flex flex-wrap gap-1 max-w-[180px]">
-                                @foreach($u->userType->respnsapity as $resp)
-                                <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                    {{ $resp }}
+                            <div class="flex flex-wrap gap-1 max-w-[200px]">
+                                @foreach((array)$u->userType->respnsapity as $resp)
+                                @php
+                                    $tType = is_numeric($resp) ? ($taskTypesMap[$resp] ?? null) : null;
+                                @endphp
+                                <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800" title="ID: {{ $resp }}">
+                                    @if($tType)
+                                        🏷️ {{ $tType->name }}
+                                    @else
+                                        {{ $resp }}
+                                    @endif
                                 </span>
                                 @endforeach
                             </div>
@@ -159,7 +170,7 @@
                                         'project_id' => $u->project_id,
                                         'role' => $u->roles->first()?->name ?? 'user',
                                         'type' => $u->userType?->type ?? 'normal',
-                                        'respnsapity' => implode(', ', (array)($u->userType?->respnsapity ?? [])),
+                                        'respnsapity' => array_values(array_map(fn($v) => is_numeric($v) ? (int)$v : $v, (array)($u->userType?->respnsapity ?? []))),
                                         'workspaces' => $u->workspaces->pluck('pivot.role', 'id')->toArray()
                                     ]) }})"
                                     class="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 dark:hover:bg-indigo-900/50 text-xs font-bold transition-colors flex items-center gap-1"
@@ -249,7 +260,7 @@
                         <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
                             القسم / المشروع الأساسي <span class="text-rose-500">*</span>
                         </label>
-                        <select name="project_id" required
+                        <select name="project_id" id="newProjectSelect" required onchange="filterTaskTypesByProject('new', this.value)"
                             class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-brand-500">
                             <option value="">-- اختر القسم --</option>
                             @foreach($projects as $p)
@@ -284,11 +295,35 @@
                         </select>
                     </div>
 
-                    <!-- Responsibilities -->
+                    <!-- Quick Responsibilities fallback text -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">المسؤوليات التخصصية</label>
-                        <input type="text" name="respnsapity" placeholder="مثال: network, device, focus"
+                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">ملاحظة / مسؤوليات يدوية (اختياري)</label>
+                        <input type="text" name="respnsapity_text" placeholder="مثال: network, device"
                             class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+
+                <!-- Responsibilities (Task Types from User's Project) -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                            المسؤوليات التخصصية (أنواع المهام التابعة للقسم)
+                        </label>
+                        <span class="text-[11px] text-brand-600 dark:text-brand-400 font-medium" id="newProjectTtCount">اختر القسم أولاً لفلترة أنواع المهام</span>
+                    </div>
+                    <div class="max-h-36 overflow-y-auto space-y-1.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                        @forelse($taskTypes as $tt)
+                        <label class="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer text-xs new-user-tt transition-all" data-project-id="{{ $tt->project_id }}">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" name="respnsapity[]" value="{{ $tt->id }}" class="rounded text-brand-600 focus:ring-brand-500">
+                                <span class="font-bold text-slate-800 dark:text-slate-200">{{ $tt->name }}</span>
+                                <span class="text-[10px] font-mono text-slate-400">({{ $tt->type }})</span>
+                            </div>
+                            <span class="text-[10px] text-slate-400">#{{ $tt->id }} • {{ $tt->project?->name ?? 'بدون قسم' }}</span>
+                        </label>
+                        @empty
+                        <span class="text-xs text-slate-400 italic">لا توجد أنواع مهام معرّفة حالياً</span>
+                        @endforelse
                     </div>
                 </div>
 
@@ -379,7 +414,7 @@
                         <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
                             القسم / المشروع الأساسي <span class="text-rose-500">*</span>
                         </label>
-                        <select name="project_id" id="editProjectId" required
+                        <select name="project_id" id="editProjectId" required onchange="filterTaskTypesByProject('edit', this.value)"
                             class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-brand-500">
                             <option value="">-- اختر القسم --</option>
                             @foreach($projects as $p)
@@ -414,11 +449,35 @@
                         </select>
                     </div>
 
-                    <!-- Responsibilities -->
+                    <!-- Quick Responsibilities fallback text -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">المسؤوليات التخصصية</label>
-                        <input type="text" name="respnsapity" id="editRespnsapity" placeholder="مثال: network, device, focus"
+                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">ملاحظة / مسؤوليات يدوية (اختياري)</label>
+                        <input type="text" name="respnsapity_text" id="editRespnsapityText" placeholder="مثال: network, device"
                             class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+
+                <!-- Responsibilities (Task Types from User's Project) -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                            المسؤوليات التخصصية (أنواع المهام التابعة للقسم)
+                        </label>
+                        <span class="text-[11px] text-brand-600 dark:text-brand-400 font-medium" id="editProjectTtCount">أنواع المهام المتاحة</span>
+                    </div>
+                    <div class="max-h-36 overflow-y-auto space-y-1.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                        @forelse($taskTypes as $tt)
+                        <label class="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer text-xs edit-user-tt transition-all" data-project-id="{{ $tt->project_id }}" id="edit_tt_wrap_{{ $tt->id }}">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" name="respnsapity[]" value="{{ $tt->id }}" id="edit_tt_{{ $tt->id }}" class="rounded text-brand-600 focus:ring-brand-500">
+                                <span class="font-bold text-slate-800 dark:text-slate-200">{{ $tt->name }}</span>
+                                <span class="text-[10px] font-mono text-slate-400">({{ $tt->type }})</span>
+                            </div>
+                            <span class="text-[10px] text-slate-400">#{{ $tt->id }} • {{ $tt->project?->name ?? 'بدون قسم' }}</span>
+                        </label>
+                        @empty
+                        <span class="text-xs text-slate-400 italic">لا توجد أنواع مهام معرّفة حالياً</span>
+                        @endforelse
                     </div>
                 </div>
 
@@ -464,6 +523,27 @@
 
 @push('scripts')
 <script>
+    function filterTaskTypesByProject(modalType, projectId) {
+        const selector = modalType === 'new' ? '.new-user-tt' : '.edit-user-tt';
+        const countSpan = document.getElementById(modalType === 'new' ? 'newProjectTtCount' : 'editProjectTtCount');
+        const items = document.querySelectorAll(selector);
+        let visibleCount = 0;
+
+        items.forEach(el => {
+            const elProjId = el.getAttribute('data-project-id');
+            if (!projectId || !elProjId || elProjId === String(projectId)) {
+                el.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                el.classList.add('hidden');
+            }
+        });
+
+        if (countSpan) {
+            countSpan.innerText = projectId ? `تم إظهار (${visibleCount}) نوع مهام لهذا القسم` : 'عرض جميع أنواع المهام';
+        }
+    }
+
     function openEditUserModal(user) {
         document.getElementById('editModalTitle').innerText = 'تعديل بيانات المستخدم: ' + user.name;
         document.getElementById('editName').value = user.name || '';
@@ -472,7 +552,32 @@
         document.getElementById('editProjectId').value = user.project_id || '';
         document.getElementById('editRole').value = user.role || 'user';
         document.getElementById('editType').value = user.type || 'normal';
-        document.getElementById('editRespnsapity').value = user.respnsapity || '';
+
+        // Filter task types for this user's project
+        filterTaskTypesByProject('edit', user.project_id);
+
+        // Reset and check task types checkboxes
+        const userRespList = Array.isArray(user.respnsapity) ? user.respnsapity : [];
+        let nonNumericTexts = [];
+
+        @foreach($taskTypes as $tt)
+            const ttChk_{{ $tt->id }} = document.getElementById('edit_tt_{{ $tt->id }}');
+            if (ttChk_{{ $tt->id }}) {
+                const isChecked = userRespList.some(r => Number(r) === {{ $tt->id }});
+                ttChk_{{ $tt->id }}.checked = isChecked;
+            }
+        @endforeach
+
+        userRespList.forEach(item => {
+            if (isNaN(Number(item))) {
+                nonNumericTexts.push(item);
+            }
+        });
+
+        const manualInput = document.getElementById('editRespnsapityText');
+        if (manualInput) {
+            manualInput.value = nonNumericTexts.join(', ');
+        }
 
         // Reset all workspace checkboxes & roles
         @foreach($workspaces as $ws)

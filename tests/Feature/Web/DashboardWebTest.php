@@ -158,6 +158,63 @@ class DashboardWebTest extends TestCase
             ->assertSee('show_user_types');
     }
 
+    public function test_admin_can_create_new_role_with_permissions(): void
+    {
+        $response = $this->actingAs($this->admin, 'web')->post('/dashboard/roles', [
+            'name'        => 'auditor',
+            'permissions' => ['show_tasks', 'show_projects'],
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('roles', [
+            'name' => 'auditor',
+        ]);
+
+        $role = \Spatie\Permission\Models\Role::where('name', 'auditor')->first();
+        $this->assertNotNull($role);
+        $this->assertTrue($role->hasPermissionTo('show_tasks', 'sanctum'));
+        $this->assertTrue($role->hasPermissionTo('show_projects', 'sanctum'));
+        $this->assertFalse($role->hasPermissionTo('delete_tasks', 'sanctum'));
+    }
+
+    public function test_admin_can_update_role_and_sync_permissions(): void
+    {
+        $role = \Spatie\Permission\Models\Role::create([
+            'name'       => 'supervisor',
+            'guard_name' => 'sanctum',
+        ]);
+        $role->givePermissionTo('show_tasks');
+
+        $response = $this->actingAs($this->admin, 'web')->post("/dashboard/roles/{$role->id}/update", [
+            'name'        => 'lead_supervisor',
+            'permissions' => ['show_tasks', 'create_tasks', 'update_tasks'],
+        ]);
+
+        $response->assertRedirect();
+        $freshRole = $role->fresh();
+        $this->assertEquals('lead_supervisor', $freshRole->name);
+        $this->assertTrue($freshRole->hasPermissionTo('create_tasks', 'sanctum'));
+        $this->assertTrue($freshRole->hasPermissionTo('update_tasks', 'sanctum'));
+    }
+
+    public function test_admin_can_delete_custom_role_but_not_system_roles(): void
+    {
+        $customRole = \Spatie\Permission\Models\Role::create([
+            'name'       => 'temporary_role',
+            'guard_name' => 'sanctum',
+        ]);
+
+        $deleteResponse = $this->actingAs($this->admin, 'web')->delete("/dashboard/roles/{$customRole->id}");
+        $deleteResponse->assertRedirect();
+        $this->assertDatabaseMissing('roles', ['name' => 'temporary_role']);
+
+        // Try deleting admin role
+        $adminRole = \Spatie\Permission\Models\Role::where('name', 'admin')->first();
+        $adminDeleteResponse = $this->actingAs($this->admin, 'web')->delete("/dashboard/roles/{$adminRole->id}");
+        $adminDeleteResponse->assertRedirect();
+        $this->assertDatabaseHas('roles', ['name' => 'admin']);
+    }
+
     public function test_workspaces_and_projects_page(): void
     {
         $response = $this->actingAs($this->admin, 'web')->get('/dashboard/workspaces');

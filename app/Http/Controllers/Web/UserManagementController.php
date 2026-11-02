@@ -35,6 +35,7 @@ class UserManagementController extends Controller
         $projects = Project::orderBy('name')->get();
         $workspaces = Workspace::with('project')->orderBy('name')->get();
         $roles = Role::all();
+        $taskTypes = \App\Models\TaskType::with('project')->orderBy('name')->get();
 
         return view('dashboard.users.index', compact(
             'users',
@@ -43,7 +44,8 @@ class UserManagementController extends Controller
             'trashedCount',
             'projects',
             'workspaces',
-            'roles'
+            'roles',
+            'taskTypes'
         ));
     }
 
@@ -63,7 +65,7 @@ class UserManagementController extends Controller
             'workspaces.*'    => ['exists:workspaces,id'],
             'workspace_roles' => ['nullable', 'array'],
             'type'            => ['nullable', 'string', 'max:50'],
-            'respnsapity'     => ['nullable', 'string'],
+            'respnsapity'     => ['nullable'],
         ], [
             'project_id.required' => 'برجاء اختيار القسم / المشروع',
             'project_id.exists'   => 'برجاء اختيار القسم / المشروع',
@@ -99,7 +101,21 @@ class UserManagementController extends Controller
         if (!empty($userType)) {
             $responsibilities = [];
             if (!empty($respnsapity)) {
-                $responsibilities = array_values(array_filter(array_map('trim', explode(',', $respnsapity))));
+                if (is_array($respnsapity)) {
+                    $responsibilities = array_values(array_filter(array_map('intval', $respnsapity)));
+                } else {
+                    $responsibilities = array_values(array_filter(array_map(
+                        fn($v) => is_numeric(trim($v)) ? (int) trim($v) : trim($v),
+                        explode(',', (string) $respnsapity)
+                    )));
+                }
+            }
+            if (!empty($request->respnsapity_text)) {
+                $manual = array_values(array_filter(array_map(
+                    fn($v) => is_numeric(trim($v)) ? (int) trim($v) : trim($v),
+                    explode(',', (string) $request->respnsapity_text)
+                )));
+                $responsibilities = array_values(array_unique(array_merge($responsibilities, $manual)));
             }
             UserType::create([
                 'user_id'     => $user->id,
@@ -127,7 +143,7 @@ class UserManagementController extends Controller
             'workspaces.*'    => ['exists:workspaces,id'],
             'workspace_roles' => ['nullable', 'array'],
             'type'            => ['nullable', 'string', 'max:50'],
-            'respnsapity'     => ['nullable', 'string'],
+            'respnsapity'     => ['nullable'],
         ], [
             'project_id.required' => 'برجاء اختيار القسم / المشروع',
             'project_id.exists'   => 'برجاء اختيار القسم / المشروع',
@@ -168,7 +184,21 @@ class UserManagementController extends Controller
         if (!empty($userType)) {
             $responsibilities = [];
             if (!empty($respnsapity)) {
-                $responsibilities = array_values(array_filter(array_map('trim', explode(',', $respnsapity))));
+                if (is_array($respnsapity)) {
+                    $responsibilities = array_values(array_filter(array_map('intval', $respnsapity)));
+                } else {
+                    $responsibilities = array_values(array_filter(array_map(
+                        fn($v) => is_numeric(trim($v)) ? (int) trim($v) : trim($v),
+                        explode(',', (string) $respnsapity)
+                    )));
+                }
+            }
+            if (!empty($request->respnsapity_text)) {
+                $manual = array_values(array_filter(array_map(
+                    fn($v) => is_numeric(trim($v)) ? (int) trim($v) : trim($v),
+                    explode(',', (string) $request->respnsapity_text)
+                )));
+                $responsibilities = array_values(array_unique(array_merge($responsibilities, $manual)));
             }
             UserType::updateOrCreate(
                 ['user_id' => $user->id],
@@ -210,12 +240,20 @@ class UserManagementController extends Controller
     {
         $validated = $request->validate([
             'type'        => ['required', 'string', 'max:50'],
-            'respnsapity' => ['nullable', 'string'],
+            'respnsapity' => ['nullable'],
         ]);
 
         $responsibilities = [];
         if (!empty($validated['respnsapity'])) {
-            $responsibilities = array_values(array_filter(array_map('trim', explode(',', $validated['respnsapity']))));
+            $raw = $validated['respnsapity'];
+            if (is_array($raw)) {
+                $responsibilities = array_values(array_filter(array_map('intval', $raw)));
+            } else {
+                $responsibilities = array_values(array_filter(array_map(
+                    fn($v) => is_numeric(trim($v)) ? (int) trim($v) : trim($v),
+                    explode(',', (string) $raw)
+                )));
+            }
         }
 
         UserType::updateOrCreate(

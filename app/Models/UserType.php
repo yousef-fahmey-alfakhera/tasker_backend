@@ -35,4 +35,16 @@ class UserType extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Get the task types associated with this user type's responsibilities.
+     */
+    public function responsibleTaskTypes()
+    {
+        $ids = array_values(array_filter(
+            array_map('intval', (array) ($this->respnsapity ?? []))
+        ));
+
+        return TaskType::whereIn('id', $ids)->get();
+    }
 }

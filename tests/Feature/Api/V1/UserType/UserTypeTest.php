@@ -162,6 +162,65 @@ class UserTypeTest extends TestCase
         $this->assertEquals(0, $tasks[$task2->id]['respnsapity']);
     }
 
+    public function test_task_index_sets_respnsapity_to_one_when_task_type_id_is_in_user_responsibilities_ids_list(): void
+    {
+        $techUser = User::factory()->create();
+        $techUser->assignRole('admin');
+
+        $project = Project::create([
+            'name'       => 'Engineering Project',
+            'created_by' => $techUser->id,
+        ]);
+
+        $techUser->update(['project_id' => $project->id]);
+
+        $workspace = Workspace::create([
+            'project_id' => $project->id,
+            'name'       => 'Engineering Workspace',
+            'created_by' => $techUser->id,
+        ]);
+        $workspace->users()->attach($techUser->id, ['role' => 'creator']);
+
+        $status = TaskStatus::create(['name' => 'Todo', 'stage' => 'pending', 'order' => 1]);
+
+        $taskType1 = TaskType::create(['name' => 'Server Maintenance', 'type' => 'server', 'project_id' => $project->id]);
+        $taskType2 = TaskType::create(['name' => 'UI Tweaks', 'type' => 'design', 'project_id' => $project->id]);
+
+        // Assign UserType with respnsapity as list of task_type IDs for the user project
+        UserType::create([
+            'user_id'     => $techUser->id,
+            'type'        => 'normal',
+            'respnsapity' => [$taskType1->id],
+        ]);
+
+        $task1 = Task::create([
+            'created_by'   => $techUser->id,
+            'project_id'   => $project->id,
+            'workspace_id' => $workspace->id,
+            'status_id'    => $status->id,
+            'task_type_id' => $taskType1->id,
+            'title'        => 'Patch production servers',
+            'position'     => 1,
+        ]);
+
+        $task2 = Task::create([
+            'created_by'   => $techUser->id,
+            'project_id'   => $project->id,
+            'workspace_id' => $workspace->id,
+            'status_id'    => $status->id,
+            'task_type_id' => $taskType2->id,
+            'title'        => 'Update button colors',
+            'position'     => 2,
+        ]);
+
+        $response = $this->actingAs($techUser, 'sanctum')->getJson('/api/tasks');
+        $response->assertStatus(200);
+
+        $tasks = collect($response->json('data'))->keyBy('id');
+        $this->assertEquals(1, $tasks[$task1->id]['respnsapity']);
+        $this->assertEquals(0, $tasks[$task2->id]['respnsapity']);
+    }
+
     public function test_user_without_user_type_is_filtered_to_creator_only(): void
     {
         $creatorUser = User::factory()->create();

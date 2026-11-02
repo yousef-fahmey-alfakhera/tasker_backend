@@ -47,6 +47,9 @@ Route::middleware('auth:web')->group(function () {
 
         // 3. Role & Permission Management
         Route::get('/roles', [RolePermissionController::class, 'index'])->name('roles');
+        Route::post('/roles', [RolePermissionController::class, 'storeRole'])->name('roles.store');
+        Route::post('/roles/{role}/update', [RolePermissionController::class, 'updateRole'])->name('roles.update');
+        Route::delete('/roles/{role}', [RolePermissionController::class, 'destroyRole'])->name('roles.destroy');
 
         // 4. Workspace (المواسم) & Project (الأقسام) Management
         Route::get('/workspaces', [WorkspaceProjectController::class, 'index'])->name('workspaces');

@@ -25,23 +25,36 @@ class TaskResource extends JsonResource
         if ($user) {
             $userType = $user->relationLoaded('userType') ? $user->userType : $user->userType()->first();
             if ($userType) {
-                $taskTypeModel = $this->relationLoaded('taskType') ? $this->taskType : $this->taskType;
-                if ($taskTypeModel) {
-                    $taskType = strtolower(trim((string) $taskTypeModel->type));
-                    $taskName = strtolower(trim((string) $taskTypeModel->name));
-                    $uType = strtolower(trim((string) $userType->type));
-                    $responsibilities = array_map(
-                        fn($r) => strtolower(trim((string) $r)),
-                        (array) ($userType->respnsapity ?? [])
-                    );
+                $taskTypeId = (int) $this->task_type_id;
+                $rawResponsibilities = (array) ($userType->respnsapity ?? []);
 
-                    if (
-                        $uType === $taskType ||
-                        $uType === $taskName ||
-                        in_array($taskType, $responsibilities, true) ||
-                        in_array($taskName, $responsibilities, true)
-                    ) {
-                        $isResponsible = 1;
+                // 1. Primary match: task_type_id is in user's responsibilities list of IDs
+                $intResponsibilities = array_filter(
+                    array_map(fn($r) => is_numeric($r) ? (int) $r : null, $rawResponsibilities)
+                );
+
+                if ($taskTypeId && in_array($taskTypeId, $intResponsibilities, true)) {
+                    $isResponsible = 1;
+                } else {
+                    // 2. Fallback matching by type/name for legacy support
+                    $taskTypeModel = $this->relationLoaded('taskType') ? $this->taskType : $this->taskType;
+                    if ($taskTypeModel) {
+                        $taskType = strtolower(trim((string) $taskTypeModel->type));
+                        $taskName = strtolower(trim((string) $taskTypeModel->name));
+                        $uType = strtolower(trim((string) $userType->type));
+                        $strResponsibilities = array_map(
+                            fn($r) => strtolower(trim((string) $r)),
+                            $rawResponsibilities
+                        );
+
+                        if (
+                            $uType === $taskType ||
+                            $uType === $taskName ||
+                            in_array($taskType, $strResponsibilities, true) ||
+                            in_array($taskName, $strResponsibilities, true)
+                        ) {
+                            $isResponsible = 1;
+                        }
                     }
                 }
             }

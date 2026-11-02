@@ -16,10 +16,10 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             PermissionSeeder::class,
-            UserTypeSeeder::class,
-            TaskStatusSeeder::class,
             ProjectSeeder::class,
             TaskTypeSeeder::class,
+            UserTypeSeeder::class,
+            TaskStatusSeeder::class,
             WorkspaceSeeder::class,
             TaskSeeder::class,
             AttachmentSeeder::class,

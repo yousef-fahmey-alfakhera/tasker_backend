@@ -12,6 +12,18 @@ class UpdateUserTypeRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('respnsapity') && is_array($this->respnsapity)) {
+            $this->merge([
+                'respnsapity' => array_values(array_map(
+                    fn($id) => is_numeric($id) ? (int) $id : $id,
+                    $this->respnsapity
+                )),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         $userTypeId = $this->route('userType')?->id ?? $this->route('userType');
@@ -26,7 +38,7 @@ class UpdateUserTypeRequest extends FormRequest
             ],
             'type'          => ['sometimes', 'required', 'string', 'max:255'],
             'respnsapity'   => ['nullable', 'array'],
-            'respnsapity.*' => ['string', 'max:255'],
+            'respnsapity.*' => ['nullable'],
         ];
     }
 }
