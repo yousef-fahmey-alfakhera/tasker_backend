@@ -69,10 +69,21 @@ class TaskResource extends JsonResource
             'parent_task_id' => $this->parent_task_id,
             'created_by'     => $this->created_by,
             'creator'        => $this->whenLoaded('creator', function () {
+                if (! $this->creator) {
+                    return null;
+                }
+
+                $creatorProject = $this->creator->relationLoaded('project')
+                    ? $this->creator->project
+                    : $this->creator->project;
+
                 return [
-                    'id'    => $this->creator->id,
-                    'name'  => $this->creator->name,
-                    'email' => $this->creator->email,
+                    'id'           => $this->creator->id,
+                    'name'         => $this->creator->name,
+                    'email'        => $this->creator->email,
+                    'project_id'   => $this->creator->project_id,
+                    'project_name' => $creatorProject?->name,
+                    'department'   => $creatorProject?->name,
                 ];
             }),
             'fixed_by'       => $this->fixed_by,

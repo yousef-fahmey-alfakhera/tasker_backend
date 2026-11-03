@@ -28,7 +28,7 @@ class TaskManagementController extends Controller
         $projects = Project::all();
 
         $query = $isTrashed ? Task::onlyTrashed() : Task::query();
-        $query->with(['status', 'taskType', 'creator', 'fixedBy', 'workspace.project', 'children'])
+        $query->with(['status', 'taskType', 'creator.project', 'fixedBy', 'workspace.project', 'children'])
             ->latest('id');
 
         if ($request->filled('workspace_id')) {

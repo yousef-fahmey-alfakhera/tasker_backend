@@ -24,7 +24,7 @@ class TaskService
      */
     public function getAll(array $filters = [], ?User $user = null, int $perPage = 10): LengthAwarePaginator
     {
-        $query = Task::with(['creator', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'attachments', 'children'])
+        $query = Task::with(['creator.project', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'attachments', 'children'])
             ->withCount('subtasks')
             ->orderBy('position');
 
@@ -107,7 +107,7 @@ class TaskService
     public function getById(Task $task): Task
     {
         return $task->loadMissing([
-            'creator',
+            'creator.project',
             'fixedBy',
             'project',
             'workspace',
@@ -166,7 +166,7 @@ class TaskService
             $this->storeAttachments($task, $attachments, $userId);
         }
 
-        return $task->loadMissing(['creator', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'attachments']);
+        return $task->loadMissing(['creator.project', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'attachments']);
     }
 
     /**
@@ -222,7 +222,7 @@ class TaskService
 
         $task->update($data);
 
-        return $task->fresh(['creator', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'attachments'])
+        return $task->fresh(['creator.project', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'attachments'])
             ->loadCount('subtasks');
     }
 
@@ -240,7 +240,7 @@ class TaskService
     public function getTrashed(array $filters = [], ?User $user = null, int $perPage = 10): LengthAwarePaginator
     {
         $query = Task::onlyTrashed()
-            ->with(['creator', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'children'])
+            ->with(['creator.project', 'fixedBy', 'project', 'workspace', 'status', 'taskType', 'children'])
             ->withCount('subtasks')
             ->latest('deleted_at');
 
@@ -286,7 +286,7 @@ class TaskService
         $task->restore();
 
         return $task->loadMissing([
-            'creator',
+            'creator.project',
             'fixedBy',
             'project',
             'workspace',
