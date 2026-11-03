@@ -16,7 +16,7 @@ class UpdateTaskTypeRequest extends FormRequest
     {
         return [
             'name'       => ['sometimes', 'required', 'string', 'max:255'],
-            'type'       => ['sometimes', 'required', 'string', Rule::in(['network', 'device', 'focus', 'other'])],
+            'type'       => ['sometimes', 'nullable', 'string', 'max:100'],
             'project_id' => ['sometimes', 'nullable', 'integer', 'exists:projects,id'],
         ];
     }

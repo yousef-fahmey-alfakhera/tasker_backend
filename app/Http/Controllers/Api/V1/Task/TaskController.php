@@ -25,7 +25,7 @@ class TaskController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:show_tasks', only: ['index', 'show', 'trashed']),
-            new Middleware('permission:create_tasks', only: ['store']),
+            // new Middleware('permission:create_tasks', only: ['store']),
             new Middleware('permission:update_tasks', only: ['update', 'restore']),
             new Middleware('permission:delete_tasks', only: ['destroy']),
         ];

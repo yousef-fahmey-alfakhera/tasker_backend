@@ -91,13 +91,47 @@ class TaskManagementController extends Controller
     {
         $validated = $request->validate([
             'name'       => ['required', 'string', 'max:255'],
-            'type'       => ['required', 'string', Rule::in(['network', 'device', 'focus', 'other'])],
+            'type'       => ['nullable', 'string', 'max:100'],
             'project_id' => ['nullable', 'exists:projects,id'],
         ]);
 
+        if (empty($validated['type'])) {
+            $validated['type'] = \Illuminate\Support\Str::slug($validated['name'], '_') ?: 'other';
+        }
+
         TaskType::create($validated);
 
-        return back()->with('success', 'Task type created successfully.');
+        return back()->with('success', __('dashboard.task_type_created') ?: 'Task type created successfully.');
+    }
+
+    /**
+     * Update existing task type.
+     */
+    public function updateType(Request $request, TaskType $taskType): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name'       => ['required', 'string', 'max:255'],
+            'type'       => ['nullable', 'string', 'max:100'],
+            'project_id' => ['nullable', 'exists:projects,id'],
+        ]);
+
+        if (empty($validated['type'])) {
+            $validated['type'] = \Illuminate\Support\Str::slug($validated['name'], '_') ?: 'other';
+        }
+
+        $taskType->update($validated);
+
+        return back()->with('success', __('dashboard.task_type_updated') ?: 'Task type updated successfully.');
+    }
+
+    /**
+     * Delete a task type.
+     */
+    public function destroyType(TaskType $taskType): RedirectResponse
+    {
+        $taskType->delete();
+
+        return back()->with('success', __('dashboard.task_type_deleted') ?: 'Task type deleted successfully.');
     }
 
     /**

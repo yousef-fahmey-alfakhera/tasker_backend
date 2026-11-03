@@ -230,16 +230,42 @@ class DashboardWebTest extends TestCase
             ->assertSee('Configured Task Types')
             ->assertSee('Workflow Statuses');
 
-        // Store new task type
+        $project = \App\Models\Project::first();
+
+        // Store new custom task type for a department
         $typeResponse = $this->actingAs($this->admin, 'web')->post('/dashboard/tasks/types', [
-            'name' => 'Database Optimization',
-            'type' => 'focus',
+            'name'       => 'Fiber Cable Splicing',
+            'type'       => 'fiber_optics',
+            'project_id' => $project?->id,
         ]);
 
         $typeResponse->assertRedirect();
         $this->assertDatabaseHas('task_types', [
-            'name' => 'Database Optimization',
-            'type' => 'focus',
+            'name' => 'Fiber Cable Splicing',
+            'type' => 'fiber_optics',
+        ]);
+
+        $createdType = TaskType::where('name', 'Fiber Cable Splicing')->first();
+        $this->assertNotNull($createdType);
+
+        // Update task type
+        $updateResponse = $this->actingAs($this->admin, 'web')->post("/dashboard/tasks/types/{$createdType->id}/update", [
+            'name'       => 'Fiber Cable Splicing & Testing',
+            'type'       => 'telecom',
+            'project_id' => $project?->id,
+        ]);
+        $updateResponse->assertRedirect();
+        $this->assertDatabaseHas('task_types', [
+            'id'   => $createdType->id,
+            'name' => 'Fiber Cable Splicing & Testing',
+            'type' => 'telecom',
+        ]);
+
+        // Delete task type
+        $deleteResponse = $this->actingAs($this->admin, 'web')->delete("/dashboard/tasks/types/{$createdType->id}");
+        $deleteResponse->assertRedirect();
+        $this->assertSoftDeleted('task_types', [
+            'id' => $createdType->id,
         ]);
     }
 

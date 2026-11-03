@@ -65,6 +65,8 @@ Route::middleware('auth:web')->group(function () {
         Route::delete('/tasks/{task}', [TaskManagementController::class, 'destroy'])->name('tasks.destroy');
         Route::post('/tasks/{id}/restore', [TaskManagementController::class, 'restore'])->name('tasks.restore');
         Route::post('/tasks/types', [TaskManagementController::class, 'storeType'])->name('tasks.type.store');
+        Route::post('/tasks/types/{taskType}/update', [TaskManagementController::class, 'updateType'])->name('tasks.type.update');
+        Route::delete('/tasks/types/{taskType}', [TaskManagementController::class, 'destroyType'])->name('tasks.type.destroy');
         Route::post('/tasks/statuses', [TaskManagementController::class, 'storeStatus'])->name('tasks.status.store');
 
         // 6. Personal Settings & Theme

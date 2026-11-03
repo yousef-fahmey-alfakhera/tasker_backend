@@ -28,19 +28,38 @@
 
                 <div class="flex flex-wrap gap-2">
                     @forelse($taskTypes as $tt)
-                    <div class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 flex items-center gap-3">
+                    <div class="group p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between gap-3 hover:border-brand-500/50 transition-all">
                         <div>
                             <span class="block text-xs font-bold text-slate-900 dark:text-white">{{ $tt->name }}</span>
                             <div class="flex items-center gap-1.5 mt-0.5">
-                                <span class="text-[10px] font-mono uppercase font-bold text-brand-600 dark:text-brand-400">{{ $tt->type }}</span>
+                                <span class="text-[10px] font-mono uppercase font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/60 px-1.5 py-0.5 rounded">{{ $tt->type }}</span>
                                 @if($tt->project)
-                                <span class="text-[9px] text-slate-400 font-medium">| 📂 {{ $tt->project->name }}</span>
+                                <span class="text-[9px] text-slate-500 dark:text-slate-400 font-medium">📂 {{ $tt->project->name }}</span>
+                                @else
+                                <span class="text-[9px] text-slate-400 font-medium">🌐 عام</span>
                                 @endif
                             </div>
                         </div>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                            {{ $tt->tasks_count }}
-                        </span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                                {{ $tt->tasks_count }}
+                            </span>
+                            <button type="button"
+                                onclick="openEditTypeModal({{ json_encode(['id' => $tt->id, 'name' => $tt->name, 'type' => $tt->type, 'project_id' => $tt->project_id]) }})"
+                                class="p-1 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                title="تعديل نوع المهمة">
+                                ✏️
+                            </button>
+                            <form action="{{ route('dashboard.tasks.type.destroy', $tt) }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذا النوع؟');" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                    class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                    title="حذف نوع المهمة">
+                                    🗑️
+                                </button>
+                            </form>
+                        </div>
                     </div>
                     @empty
                     <p class="text-xs text-slate-400">{{ __('dashboard.no_task_types') }}</p>
@@ -252,33 +271,73 @@
             <form action="{{ route('dashboard.tasks.type.store') }}" method="POST" class="space-y-4">
                 @csrf
                 <div>
-                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">{{ __('dashboard.type_name_label') }}</label>
-                    <input type="text" name="name" placeholder="e.g. Wi-Fi Infrastructure" required
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">{{ __('dashboard.type_name_label') }} (اسم نوع المهمة)</label>
+                    <input type="text" name="name" placeholder="مثال: صيانة شبكات، كاميرات مراقبة، تدقيق، تصميم..." required
                         class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-medium">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">{{ __('dashboard.category_type_label') }}</label>
-                    <select name="type" required
-                        class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
-                        <option value="network">{{ __('dashboard.network') }}</option>
-                        <option value="device">{{ __('dashboard.device') }}</option>
-                        <option value="focus">{{ __('dashboard.focus') }}</option>
-                        <option value="other">{{ __('dashboard.other') }}</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">القسم / المشروع التابع له (Project)</label>
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">القسم / المشروع التابع له (Department / Project)</label>
                     <select name="project_id"
                         class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
-                        <option value="">بدون قسم محدد (عام)</option>
+                        <option value="">عام لجميع الأقسام (General / All Departments)</option>
                         @foreach($projects as $p)
                         <option value="{{ $p->id }}">{{ $p->name }}</option>
                         @endforeach
                     </select>
                 </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">رمز / تصنيف النوع (Type Slug/Category - اختياري أو مخصص)</label>
+                    <input type="text" name="type" placeholder="مثال: network, device, inspection, review, general..." list="typeSuggestions"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-medium">
+                    <datalist id="typeSuggestions">
+                        <option value="network">شبكات (Network)</option>
+                        <option value="device">أجهزة وصيانة (Device)</option>
+                        <option value="focus">تركيز ومهام خاصة (Focus)</option>
+                        <option value="maintenance">صيانة عامة (Maintenance)</option>
+                        <option value="review">مراجعة وتدقيق (Review)</option>
+                        <option value="support">دعم فني (Support)</option>
+                        <option value="general">عام (General)</option>
+                        <option value="other">أخرى (Other)</option>
+                    </datalist>
+                    <p class="text-[10px] text-slate-400 mt-1">يمكنك كتابة أي تصنيف مخصص تريده لهذا القسم أو تركه فارغاً ليتم إنشاؤه تلقائياً من الاسم.</p>
+                </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" onclick="document.getElementById('newTypeModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500">{{ __('dashboard.cancel') }}</button>
                     <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold">{{ __('dashboard.create_type_btn') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Task Type Modal -->
+    <div id="editTypeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+            <h3 class="font-bold text-base text-slate-900 dark:text-white">تعديل نوع المهمة</h3>
+            <form id="editTypeForm" action="" method="POST" class="space-y-4">
+                @csrf
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">اسم نوع المهمة</label>
+                    <input type="text" id="editTypeName" name="name" required
+                        class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-medium">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">القسم / المشروع التابع له</label>
+                    <select id="editTypeProjectId" name="project_id"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
+                        <option value="">عام لجميع الأقسام (General / All Departments)</option>
+                        @foreach($projects as $p)
+                        <option value="{{ $p->id }}">{{ $p->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">رمز / تصنيف النوع</label>
+                    <input type="text" id="editTypeCategory" name="type" list="typeSuggestions"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-medium">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="document.getElementById('editTypeModal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500">{{ __('dashboard.cancel') }}</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold">حفظ التعديلات</button>
                 </div>
             </form>
         </div>
@@ -317,4 +376,14 @@
         </div>
     </div>
 </div>
+
+<script>
+    function openEditTypeModal(type) {
+        document.getElementById('editTypeForm').action = '/dashboard/tasks/types/' + type.id + '/update';
+        document.getElementById('editTypeName').value = type.name;
+        document.getElementById('editTypeCategory').value = type.type || '';
+        document.getElementById('editTypeProjectId').value = type.project_id || '';
+        document.getElementById('editTypeModal').classList.remove('hidden');
+    }
+</script>
 @endsection

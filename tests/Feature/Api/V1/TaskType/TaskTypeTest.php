@@ -69,15 +69,26 @@ class TaskTypeTest extends TestCase
         ]);
     }
 
-    public function test_task_type_creation_validates_type(): void
+    public function test_task_type_creation_accepts_custom_type_for_department(): void
     {
+        $project = \App\Models\Project::create(['name' => 'IT Department']);
+
         $response = $this->actingAs($this->admin, 'sanctum')->postJson('/api/task-types', [
-            'name' => 'Invalid Type Task',
-            'type' => 'not_a_valid_type',
+            'name'       => 'CCTV Camera Inspection',
+            'type'       => 'security_camera',
+            'project_id' => $project->id,
         ]);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['type']);
+        $response->assertStatus(201)
+            ->assertJsonPath('data.name', 'CCTV Camera Inspection')
+            ->assertJsonPath('data.type', 'security_camera')
+            ->assertJsonPath('data.project_id', $project->id);
+
+        $this->assertDatabaseHas('task_types', [
+            'name'       => 'CCTV Camera Inspection',
+            'type'       => 'security_camera',
+            'project_id' => $project->id,
+        ]);
     }
 
     public function test_admin_can_show_and_update_task_type(): void
